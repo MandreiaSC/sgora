@@ -1,0 +1,13 @@
+{
+  "name": "SGO_RA",
+  "short_name": "SGO_RA",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f4c46",
+  "theme_color": "#0f4c46",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icone.png", "sizes": "256x256", "type": "image/png", "purpose": "any" }
+  ]
+}

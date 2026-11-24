@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<!-- SGO_RA — Sistema de Gestão em Osteopatia. © 2026 Marcia Sales. Todos os direitos reservados (Lei 9.609/1998). -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f4c46">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SGO_RA">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icone.png">
+<title>SGO_RA</title>
+<style>
+  :root{
+    --verde:#0f4c46; --verde-escuro:#0b3733; --verde-medio:#1d7a6d; --verde-claro:#2f9e8f; --menta:#cdeae3; --menta-claro:#eaf6f3;
+    --fundo:#f4f8f7; --borda:#d3e8e3; --texto:#1c2b29; --texto-sec:#5c7570; --texto-ter:#8a9c98; --sombra:0 2px 10px rgba(15,76,70,0.12);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; background:var(--fundo); color:var(--texto); font-family:'Segoe UI', -apple-system, Roboto, sans-serif; touch-action:manipulation;}
+  body{min-height:100vh;}
+  button{font-family:inherit;}
+  a{color:var(--verde-medio);}
+  .topo{background:var(--verde); color:#f2fbf9; padding:calc(env(safe-area-inset-top) + 10px) 10px 8px 4px; display:flex; align-items:center; gap:4px; position:sticky; top:0; z-index:5;}
+  .topo .voltar{width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:#f2fbf9; background:none; border:0;}
+  .topo .titulo{flex:1; font-size:19px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .topo img{width:26px; height:30px; object-fit:contain; margin-right:4px;}
+  .conteudo{padding:14px; display:flex; flex-direction:column; gap:12px; padding-bottom:calc(env(safe-area-inset-bottom) + 24px);}
+  .cartao{background:#fff; border-radius:10px; box-shadow:var(--sombra);}
+  .btn{min-height:48px; display:flex; align-items:center; justify-content:center; gap:8px; border-radius:10px; background:var(--verde); color:#fff; font-size:16px; font-weight:600; border:0; padding:0 16px; width:100%; cursor:pointer;}
+  .btn.claro{background:#fff; color:var(--verde); border:1px solid var(--borda);}
+  .btn.medio{background:var(--verde-claro);}
+  .btn:disabled{opacity:.55;}
+  .link{background:none; border:0; color:var(--texto-sec); font-size:15px; text-decoration:underline; min-height:40px; align-self:center; cursor:pointer;}
+  .campo{display:flex; flex-direction:column; gap:6px; font-size:15px; font-weight:600; color:var(--texto-sec);}
+  .campo input, .campo select{height:48px; border:1px solid var(--borda); border-radius:10px; padding:0 14px; font-size:17px; font-family:inherit; color:var(--texto); background:#fff; width:100%;}
+  .aviso{font-size:14px; padding:10px 12px; border-radius:8px; background:var(--menta-claro); color:var(--verde-escuro); margin:0;}
+  .aviso.erro{background:#fdf1f0; color:#a33025;}
+  .vazio{text-align:center; color:var(--texto-ter); font-size:14px; padding:18px 8px;}
+  .etiqueta{font-size:12px; font-weight:700; border-radius:999px; padding:3px 9px; white-space:nowrap;}
+  /* entrada */
+  .tela-entrada{min-height:100vh; background:var(--verde); display:flex; flex-direction:column; align-items:center; padding:calc(env(safe-area-inset-top) + 60px) 22px 30px;}
+  .tela-entrada > img{width:70px; height:80px; object-fit:contain;}
+  .tela-entrada .marca{margin:10px 0 26px; font-size:16px; font-weight:600; letter-spacing:1px; color:#f2fbf9;}
+  .quadro-entrada{width:100%; max-width:420px; background:#fff; border-radius:14px; padding:26px 22px 20px; box-shadow:var(--sombra); display:flex; flex-direction:column; gap:14px;}
+  .quadro-entrada h1{margin:0; font-size:22px; font-weight:700; color:var(--verde-escuro); text-align:center;}
+  .quadro-entrada .sub{margin:2px 0 0; font-size:13px; font-weight:600; color:var(--texto-ter); text-align:center;}
+  .rodape-entrada{margin:auto 0 0; padding-top:20px; font-size:13px; color:var(--menta); text-align:center;}
+  .senha{position:relative; display:block;}
+  .senha input{padding-right:48px;}
+  .senha button{position:absolute; right:2px; top:2px; width:44px; height:44px; border:0; background:transparent; display:flex; align-items:center; justify-content:center;}
+  .passos{display:flex; gap:6px; justify-content:center;}
+  .passos span{width:28px; height:6px; border-radius:3px; background:var(--borda);}
+  .passos span.feito{background:var(--verde-claro);}
+  .barra{height:8px; border-radius:4px; background:var(--borda); overflow:hidden;} .barra div{height:100%; background:var(--verde-claro); width:0; transition:width .2s;}
+  /* hoje */
+  .cabeca-hoje{background:var(--verde); color:#f2fbf9; padding:calc(env(safe-area-inset-top) + 12px) 14px 12px; display:flex; align-items:center; gap:12px;}
+  .avatar{width:42px; height:42px; border-radius:50%; border:2px solid var(--menta); background:var(--menta); color:var(--verde); font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; overflow:hidden;}
+  .avatar img{width:100%; height:100%; object-fit:cover;}
+  .agenda-dia .faixa{background:var(--verde-claro); color:#fff; display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px 10px 0 0;}
+  .agenda-dia .faixa b{flex:1; font-size:16px;}
+  .contador{font-size:13px; font-weight:700; background:rgba(255,255,255,0.25); border-radius:999px; padding:2px 9px;}
+  .linha-ag{display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--borda); color:var(--texto); text-decoration:none; background:none; border-left:0; border-right:0; border-top:0; width:100%; text-align:left; font:inherit;}
+  .linha-ag:last-child{border-bottom:0;}
+  .linha-ag .hora{width:46px; font-size:15px; font-weight:700; color:var(--verde-medio);}
+  .linha-ag .nome{flex:1; font-size:15px; min-width:0;}
+  .dupla{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px;}
+  .mini{border-radius:10px; padding:10px 12px; box-shadow:var(--sombra); min-width:0;}
+  .mini p{margin:0 0 4px; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:700;}
+  .mini ul{margin:0; padding-left:16px; font-size:13px; line-height:1.45;}
+  .mini.lembretes{background:#fdf1f0; border-left:4px solid #c0392b;} .mini.lembretes p{color:#a33025;}
+  .mini.aniversario{background:#fffbea; border-left:4px solid #e0a030;} .mini.aniversario p{color:#8a5a00;}
+  .botoes-menu{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; margin-top:4px;}
+  .bt{min-height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border-radius:10px; background:var(--verde); color:#f2fbf9; font-size:15px; font-weight:600; border:0; box-shadow:var(--sombra); cursor:pointer;}
+  .bt.sair{grid-column:1 / -1; min-height:48px; flex-direction:row; background:#fff; color:var(--verde); border:1px solid var(--borda);}
+  .situacao-sinc{margin:2px 0 0; display:flex; align-items:center; justify-content:center; gap:6px; font-size:13px; color:var(--texto-sec); background:none; border:0; width:100%;}
+  /* pacientes */
+  .cab-lista{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .cab-lista b{font-size:15px; color:var(--verde-escuro);}
+  .seg{display:flex; background:#fff; border:1px solid var(--borda); border-radius:10px; padding:3px; gap:3px;}
+  .seg button{flex:1; min-height:38px; border:0; border-radius:8px; background:none; font-size:15px; font-weight:600; color:var(--texto-sec);}
+  .seg button.ativo{background:var(--verde); color:#fff;}
+  .ordem{background:none; border:0; font-size:13px; color:var(--texto-sec); min-height:36px;}
+  .item-pac{display:flex; align-items:center; gap:10px; padding:10px 6px 10px 14px;}
+  .item-pac button.abrir{flex:1; text-align:left; background:none; border:0; padding:0; color:var(--texto); font:inherit; min-width:0;}
+  .item-pac .n{display:block; font-size:16px; font-weight:600;}
+  .item-pac .d{display:block; font-size:13px; color:var(--texto-sec); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .olho{width:44px; height:44px; border:0; background:transparent; display:flex; align-items:center; justify-content:center; flex:none;}
+  /* ficha */
+  .faixa-pac{background:var(--menta-claro); border-bottom:1px solid var(--borda); padding:12px 16px;}
+  .faixa-pac p{margin:0; font-size:15px; color:var(--verde-escuro);}
+  .faixa-pac p + p{margin-top:2px;}
+  .submenus{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px;}
+  .sm{min-height:52px; display:flex; align-items:center; padding:0 14px; border-radius:10px; background:#e3f2ef; color:#3d5a55; font-size:16px; font-weight:600; border:0; text-align:left;}
+  .sm.largo{grid-column:span 2; background:var(--menta); color:var(--verde);}
+  .sm.breve{opacity:.55;}
+  .dados{display:flex; flex-direction:column;}
+  .dados .l{display:flex; justify-content:space-between; gap:12px; padding:10px 14px; border-bottom:1px solid var(--borda); font-size:15px;}
+  .dados .l:last-child{border-bottom:0;}
+  .dados .l span:first-child{color:var(--texto-sec); flex:none;}
+  .dados .l span:last-child{text-align:right; font-weight:600; overflow-wrap:anywhere;}
+  .grupo{font-size:13px; font-weight:700; color:var(--verde-medio); margin:6px 2px -4px;}
+  .consulta{padding:12px 14px; display:flex; flex-direction:column; gap:4px;}
+  .consulta .t{display:flex; justify-content:space-between; align-items:center;}
+  .consulta .t b{font-size:15px; color:var(--verde-escuro);}
+  .consulta .x{font-size:14px; color:var(--texto); white-space:pre-wrap; overflow-wrap:anywhere;}
+  .consulta .x i{font-style:normal; color:var(--texto-sec); font-weight:600;}
+  .ordem-data{align-self:flex-end;}
+  /* folha de baixo (olhinho) */
+  .veu{position:fixed; inset:0; background:rgba(11,55,51,.45); z-index:20; display:flex; align-items:flex-end;}
+  .folha{background:#fff; width:100%; max-height:88vh; overflow:auto; border-radius:16px 16px 0 0; padding:16px 16px calc(env(safe-area-inset-bottom) + 18px);}
+  .folha h2{margin:0 0 10px; font-size:18px; color:var(--verde-escuro);}
+  .aviso-flutuante{position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 24px); transform:translateX(-50%); background:var(--verde-escuro); color:#fff; padding:10px 16px; border-radius:10px; font-size:14px; z-index:30; max-width:90vw; text-align:center;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="nucleo.js"></script>
+<script src="armazem.js"></script>
+<script src="drive.js"></script>
+<script>
+'use strict';
+// ====================== estado ======================
+const N = window.SgoNucleo, A = window.SgoArmazem, D = window.SgoDrive;
+let chave = null, estado = null, G = null, usuario = null, pilha = [];
+const FUNCOES_COM_CELULAR = ['super-admin', 'admin'];
+const app = document.getElementById('app');
+
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ICONE = {
+  voltar: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg>',
+  olho: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d7a6d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  olhoCinza: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8a9c98" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  agenda: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/></svg>',
+  pacientes: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></svg>',
+  financeiro: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/><path d="M6 9.5h.01"/><path d="M18 15.5h.01"/></svg>',
+  config: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3"/><path d="M12 18.5v3"/><path d="M2.5 12h3"/><path d="M18.5 12h3"/><path d="M5.3 5.3l2.1 2.1"/><path d="M16.6 16.6l2.1 2.1"/><path d="M5.3 18.7l2.1-2.1"/><path d="M16.6 7.4l2.1-2.1"/></svg>',
+  sair: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/></svg>',
+  nuvem: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f9e8f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.3 12.5 3.5 3.5 0 0 0 6.5 19z"/><path d="M9.5 14.5l2 2 3.5-3.5"/></svg>',
+};
+
+// ====================== datas ======================
+const DIAS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const hojeISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const dataBR = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return m ? `${m[3]}/${m[2]}/${m[1]}` : ''; };
+function idade(nasc) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(nasc || '')); if (!m) return '';
+  const h = new Date(); let a = h.getFullYear() - Number(m[1]);
+  if (h.getMonth() + 1 < Number(m[2]) || (h.getMonth() + 1 === Number(m[2]) && h.getDate() < Number(m[3]))) a--;
+  return a >= 0 ? a + ' anos' : '';
+}
+function saudacao() { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; }
+function dataPorExtenso() { const d = new Date(); const s = DIAS[d.getDay()]; return `${s[0].toUpperCase()}${s.slice(1)}, ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`; }
+function quandoCurto(iso) {
+  if (!iso) return '—'; const d = new Date(iso); if (isNaN(d)) return '—';
+  const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const ontem = new Date(); ontem.setDate(ontem.getDate() - 1);
+  if (d.toDateString() === new Date().toDateString()) return 'hoje, ' + hora;
+  if (d.toDateString() === ontem.toDateString()) return 'ontem, ' + hora;
+  return d.toLocaleDateString('pt-BR') + ', ' + hora;
+}
+
+// ====================== dados (mesmas regras do notebook) ======================
+const pacientes = () => G.raq_pacientes;
+const situacao = (p) => (p && p.situacao) || 'ativo';
+const fases = (p) => (p && Array.isArray(p.fases) && p.fases.length) ? p.fases : [{ numero: 1 }];
+const faseAtual = (p) => Math.max(...fases(p).map((f) => f.numero));
+const chaveFase = (pid, n) => n > 1 ? `${pid}__f${n}` : pid;
+const faseDaConsulta = (c) => (c && c.fase) || 1;
+const anamneseDaFase = (pid, n) => G.raq_anamnese[chaveFase(pid, n)] || {};
+const primeiroNome = (nome) => { const p = String(nome || '').trim().split(/\s+/); return p.length > 1 && /\.$/.test(p[0]) ? p[0] + ' ' + p[1] : (p[0] || ''); };
+const nomeExibicao = (u) => (u && (u.nomeExibicao || primeiroNome(u.nome))) || '';
+function nomePaciente(id) { const p = pacientes().find((x) => x.id === id); return p ? p.nome : '(paciente removido)'; }
+function ultimasConsultas() { const m = {}; for (const c of G.raq_consultas) if (c.pacienteId && c.data && (!m[c.pacienteId] || c.data > m[c.pacienteId])) m[c.pacienteId] = c.data; return m; }
+const CORES_STATUS = { 'Confirmada': ['#1d5a8a', '#e3f0fb'], 'Concluída': ['#1d7a6d', '#e3f2ef'], 'Cancelada': ['#a33025', '#fdf1f0'] };
+function etiquetaStatus(s) { const c = CORES_STATUS[s] || ['#5c7570', '#eef2f1']; const t = s === 'Aguardando confirmação' ? 'Aguardando' : (s || ''); return t ? `<span class="etiqueta" style="color:${c[0]};background:${c[1]}">${esc(t)}</span>` : ''; }
+
+// ====================== utilidades de tela ======================
+function avisar(texto) {
+  const a = document.createElement('div'); a.className = 'aviso-flutuante'; a.textContent = texto;
+  document.body.appendChild(a); setTimeout(() => a.remove(), 2400);
+}
+function topo(titulo, comVoltar = true) {
+  return `<header class="topo">${comVoltar ? `<button class="voltar" aria-label="Voltar" onclick="voltar()">${ICONE.voltar}</button>` : '<span style="width:10px"></span>'}
+    <span class="titulo">${esc(titulo)}</span><img src="maos.png" alt=""></header>`;
+}
+function ir(tela, ...args) { pilha.push([tela, args]); desenhar(); window.scrollTo(0, 0); }
+function voltar() { if (pilha.length > 1) pilha.pop(); desenhar(); window.scrollTo(0, 0); }
+function desenhar() { const [tela, args] = pilha[pilha.length - 1]; TELAS[tela](...args); }
+function abrirFolha(html) {
+  const v = document.createElement('div'); v.className = 'veu';
+  v.innerHTML = `<div class="folha">${html}<button class="btn claro" style="margin-top:14px" onclick="this.closest('.veu').remove()">Fechar</button></div>`;
+  v.addEventListener('click', (e) => { if (e.target === v) v.remove(); });
+  document.body.appendChild(v);
+}
+
+// ====================== início ======================
+async function iniciar() {
+  try { chave = await A.ler('chave'); } catch (e) { chave = null; }
+  if (!chave) { pilha = [['configurar', [1]]]; desenhar(); return; }
+  try { estado = await A.lerEstado(chave); } catch (e) { estado = null; }
+  if (!estado) { pilha = [['configurar', [1]]]; desenhar(); return; }
+  G = N.montarGavetas(estado);
+  pilha = [['entrar', []]]; desenhar();
+}
+
+// ====================== configurar este celular (1ª vez) ======================
+const TELAS = {};
+TELAS.configurar = (passo, erro) => {
+  const corpo = passo === 1 ? `
+      <h1>Configurar este celular</h1>
+      <div class="passos"><span class="feito"></span><span></span><span></span></div>
+      <p class="aviso">Entre na conta Google da clínica, a mesma do notebook.</p>
+      ${erro ? `<p class="aviso erro">${esc(erro)}</p>` : ''}
+      <button class="btn" id="btn-google" onclick="configurarGoogle()">Entrar com o Google</button>`
+    : passo === 2 ? `
+      <h1>Configurar este celular</h1>
+      <div class="passos"><span class="feito"></span><span class="feito"></span><span></span></div>
+      <label class="campo">Código do cofre
+        <input id="codigo-cofre" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"></label>
+      <p class="aviso">Digite o código do cofre que está na folha do kit.</p>
+      ${erro ? `<p class="aviso erro">${esc(erro)}</p>` : ''}
+      <button class="btn" id="btn-codigo" onclick="configurarCodigo()">Continuar</button>`
+    : `
+      <h1>Configurar este celular</h1>
+      <div class="passos"><span class="feito"></span><span class="feito"></span><span class="feito"></span></div>
+      <p class="aviso" id="progresso-texto">Trazendo os dados do notebook...</p>
+      <div class="barra"><div id="progresso-barra"></div></div>`;
+  app.innerHTML = `<div class="tela-entrada"><img src="maos.png" alt=""><p class="marca">SGO_RA</p><div class="quadro-entrada">${corpo}</div>
+    <p class="rodape-entrada">Os dados ficam criptografados neste celular.</p></div>`;
+};
+async function configurarGoogle() {
+  const b = document.getElementById('btn-google'); b.disabled = true;
+  try { await D.entrar(); pilha = [['configurar', [2]]]; desenhar(); }
+  catch (e) { pilha = [['configurar', [1, e.message === 'CANCELADO' ? '' : e.message]]]; desenhar(); }
+}
+async function configurarCodigo() {
+  const codigo = document.getElementById('codigo-cofre').value;
+  const b = document.getElementById('btn-codigo'); b.disabled = true; b.textContent = 'Conferindo...';
+  try {
+    const cab = await D.transporte.ler(N.ARQ_CABECALHO);
+    if (!cab) throw Object.assign(new Error('A sincronização ainda não foi ligada no notebook.'), {});
+    const k = await N.abrirCadeado(new TextDecoder().decode(cab), codigo);
+    pilha = [['configurar', [3]]]; desenhar();
+    const est = N.novoEstado();
+    await N.lerNovidades(k, D.transporte, est, (i, n) => {
+      document.getElementById('progresso-texto').textContent = `Trazendo os dados do notebook... (${i} de ${n})`;
+      document.getElementById('progresso-barra').style.width = Math.round(i / n * 100) + '%';
+    });
+    est.ultima = new Date().toISOString();
+    await A.gravar('chave', k); await A.gravarEstado(k, est);
+    chave = k; estado = est; G = N.montarGavetas(est);
+    pilha = [['entrar', []]]; desenhar();
+  } catch (e) {
+    const msg = e.code === 'CODIGO_INCORRETO' ? 'Código do cofre incorreto. Confira a folha do kit.' : e.code === 'CODIGO_INVALIDO' ? 'O código tem 24 letras e números. Confira a folha do kit.' : e.message;
+    pilha = [['configurar', [e.code === 'SEM_PASSE' ? 1 : 2, msg]]]; desenhar();
+  }
+}
+
+// ====================== entrar ======================
+const TENTATIVAS = 'sgora_tentativas';
+TELAS.entrar = (erro) => {
+  app.innerHTML = `<div class="tela-entrada"><img src="maos.png" alt=""><p class="marca">SGO_RA</p>
+    <form class="quadro-entrada" onsubmit="event.preventDefault(); entrarNoSistema()">
+      <div><h1>Sistema de gestão em osteopatia</h1><p class="sub">acesso restrito</p></div>
+      <label class="campo">Usuário<input id="login-usuario" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="nome.sobrenome"></label>
+      <label class="campo">Senha<span class="senha"><input id="login-senha" type="password" autocomplete="current-password" placeholder="Digite sua senha">
+        <button type="button" aria-label="Mostrar senha" onclick="const i=document.getElementById('login-senha'); i.type = i.type==='password'?'text':'password'">${ICONE.olhoCinza}</button></span></label>
+      ${erro ? `<p class="aviso erro">${esc(erro)}</p>` : ''}
+      <button class="btn" type="submit" id="btn-entrar" style="margin-top:6px; min-height:52px; font-size:18px">Entrar</button>
+    </form>
+    <p class="rodape-entrada">O mesmo usuário e a mesma senha do notebook.</p></div>`;
+};
+async function entrarNoSistema() {
+  const login = document.getElementById('login-usuario').value.trim().toLowerCase();
+  const senha = document.getElementById('login-senha').value;
+  let t = {}; try { t = JSON.parse(localStorage.getItem(TENTATIVAS) || '{}'); } catch (e) { t = {}; }
+  const reg = t[login] || { n: 0, ate: 0 };
+  if (reg.ate > Date.now()) { TELAS.entrar('Muitas tentativas. Aguarde 5 minutos.'); return; }
+  const b = document.getElementById('btn-entrar'); b.disabled = true; b.textContent = 'Conferindo...';
+  const u = G.raq_usuarios.find((x) => String(x.login || '').toLowerCase() === login);
+  const certo = u && await N.conferirSenha(u, senha);
+  if (!certo) {
+    reg.n++; if (reg.n >= 5) { reg.ate = Date.now() + 5 * 60 * 1000; reg.n = 0; }
+    t[login] = reg; try { localStorage.setItem(TENTATIVAS, JSON.stringify(t)); } catch (e) { /* nada */ }
+    TELAS.entrar(reg.ate > Date.now() ? 'Muitas tentativas. Aguarde 5 minutos.' : 'Usuário ou senha incorretos.'); return;
+  }
+  delete t[login]; try { localStorage.setItem(TENTATIVAS, JSON.stringify(t)); } catch (e) { /* nada */ }
+  if (u.trocarSenha) { TELAS.entrar('Troque a senha provisória no notebook antes de usar o celular.'); return; }
+  if (!FUNCOES_COM_CELULAR.includes(u.funcao)) { TELAS.entrar('Este usuário não tem acesso ao celular.'); return; }
+  usuario = u; pilha = [['hoje', []]]; desenhar();
+  atualizar(true);
+}
+function sair() { usuario = null; pilha = [['entrar', []]]; desenhar(); }
+// 5 minutos fora do aplicativo: volta para a tela de entrar (os dados continuam no aparelho, criptografados)
+let saiuEm = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) saiuEm = Date.now();
+  else if (usuario && saiuEm && Date.now() - saiuEm > 5 * 60 * 1000) { document.querySelectorAll('.veu').forEach((v) => v.remove()); sair(); }
+});
+
+// ====================== atualizar (trazer novidades do notebook) ======================
+let atualizando = false, situacaoSinc = { erro: null };
+async function atualizar(silencioso) {
+  if (atualizando || !chave) return;
+  if (!D.temPasse()) { situacaoSinc = { erro: 'SEM_PASSE' }; redesenharSituacao(); return; }
+  atualizando = true; redesenharSituacao();
+  try {
+    const r = await N.lerNovidades(chave, D.transporte, estado);
+    estado.ultima = new Date().toISOString();
+    await A.gravarEstado(chave, estado);
+    situacaoSinc = { erro: null };
+    if (r.recebidas) { G = N.montarGavetas(estado); const u = G.raq_usuarios.find((x) => x.id === usuario.id); if (u) usuario = u; if (!document.querySelector('.veu')) desenhar(); }
+    if (!silencioso) avisar(r.recebidas ? 'Dados atualizados.' : 'Tudo em dia.');
+  } catch (e) {
+    situacaoSinc = { erro: e.code || 'ERRO', mensagem: e.message };
+    if (!silencioso) avisar(e.code === 'SEM_INTERNET' ? 'Sem internet. Tente mais tarde.' : e.message);
+  } finally { atualizando = false; redesenharSituacao(); }
+}
+async function atualizarComGoogle() {
+  try { await D.entrar(); await atualizar(false); } catch (e) { if (e.message !== 'CANCELADO') avisar(e.message); }
+}
+function textoSituacao() {
+  if (atualizando) return 'Atualizando...';
+  if (situacaoSinc.erro === 'SEM_PASSE') return 'Toque para atualizar com o Google.';
+  if (situacaoSinc.erro === 'SEM_INTERNET') return 'Sem internet. Mostrando os dados de ' + quandoCurto(estado.ultima) + '.';
+  if (situacaoSinc.erro) return 'Não foi possível atualizar. Toque para tentar de novo.';
+  return 'Tudo em dia com o notebook (' + quandoCurto(estado.ultima) + ').';
+}
+function redesenharSituacao() { const el = document.getElementById('situacao-sinc'); if (el) el.querySelector('span').textContent = textoSituacao(); }
+function tocarSituacao() { if (situacaoSinc.erro === 'SEM_PASSE') atualizarComGoogle(); else atualizar(false); }
+
+// ====================== hoje ======================
+TELAS.hoje = () => {
+  const hoje = hojeISO();
+  const ag = G.raq_agendamentos.filter((a) => a.data === hoje && a.status !== 'Cancelada').sort((a, b) => String(a.horario).localeCompare(String(b.horario)));
+  const lembretes = G.raq_lembretes.filter((l) => !l.feito && (!l.data || l.data <= hoje));
+  const mmdd = hoje.slice(5);
+  const aniversario = pacientes().filter((p) => ['ativo', 'alta'].includes(situacao(p)) && p.nascimento && p.nascimento.slice(5, 10) === mmdd);
+  const iniciais = (nomeExibicao(usuario) || '?').replace(/^Dr[a]?\.\s*/i, '').slice(0, 2).toUpperCase();
+  app.innerHTML = `
+    <header class="cabeca-hoje"><span class="avatar">${usuario.foto ? `<img src="${esc(usuario.foto)}" alt="">` : esc(iniciais)}</span>
+      <span style="flex:1;min-width:0"><span style="display:block;font-size:18px;font-weight:700">${esc(saudacao())}, ${esc(nomeExibicao(usuario))}!</span><span style="font-size:13px;color:var(--menta)">${esc(dataPorExtenso())}</span></span>
+      <img src="maos.png" alt="" style="width:26px;height:30px;object-fit:contain"></header>
+    <div class="conteudo">
+      <section class="cartao agenda-dia"><div class="faixa">${ICONE.agenda}<b>Agenda do dia</b><span class="contador">${ag.length}</span></div>
+        ${ag.length ? ag.map((a) => `<button class="linha-ag" onclick="${a.pacienteId ? `ir('ficha','${esc(a.pacienteId)}')` : ''}"><span class="hora">${esc(a.horario || '')}</span>
+          <span class="nome">${a.pacienteId ? esc(nomePaciente(a.pacienteId)) : `${esc(a.pacienteNomeAvulso || '')} <span style="font-size:12px;color:#8a5a00">(não cadastrado)</span>`}</span>${etiquetaStatus(a.status)}</button>`).join('')
+          : '<p class="vazio">Nenhum agendamento hoje.</p>'}</section>
+      <div class="dupla">
+        <section class="mini lembretes"><p>Lembretes ${lembretes.length ? `<span style="font-size:12px;background:#f6d3cf;border-radius:999px;padding:0 7px">${lembretes.length}</span>` : ''}</p>
+          ${lembretes.length ? `<ul>${lembretes.slice(0, 5).map((l) => `<li>${esc(l.texto)}</li>`).join('')}</ul>` : '<p style="font-weight:400;font-size:13px;color:#5c7570;margin:0">Nenhum lembrete.</p>'}</section>
+        <section class="mini aniversario"><p>Aniversariantes ${aniversario.length ? `<span style="font-size:12px;background:#f6e3b8;border-radius:999px;padding:0 7px">${aniversario.length}</span>` : ''}</p>
+          ${aniversario.length ? `<ul>${aniversario.map((p) => `<li>${esc(p.nome)}</li>`).join('')}</ul>` : '<p style="font-weight:400;font-size:13px;color:#5c7570;margin:0">Nenhum hoje.</p>'}</section>
+      </div>
+      <div class="botoes-menu">
+        <button class="bt" onclick="ir('pacientes')">${ICONE.pacientes}Pacientes</button>
+        <button class="bt" onclick="ir('embreve','Agenda')">${ICONE.agenda.replace(/20/g, '24')}Agenda</button>
+        <button class="bt" onclick="ir('embreve','Financeiro')">${ICONE.financeiro}Financeiro</button>
+        <button class="bt" onclick="ir('configuracoes')">${ICONE.config}Configurações</button>
+        <button class="bt sair" onclick="sair()">${ICONE.sair}Sair</button>
+      </div>
+      <button class="situacao-sinc" id="situacao-sinc" onclick="tocarSituacao()">${ICONE.nuvem}<span>${esc(textoSituacao())}</span></button>
+    </div>`;
+};
+
+// ====================== pacientes ======================
+let filtroPac = { sit: 'ativo', busca: '', ordem: 'nome' };
+TELAS.pacientes = () => {
+  app.innerHTML = `${topo('Pacientes')}
+    <div class="conteudo">
+      <label class="campo" style="font-size:14px">Busca geral<input type="search" id="busca-pac" placeholder="Nome, CPF, celular, queixa..." value="${esc(filtroPac.busca)}" oninput="filtroPac.busca=this.value; listarPacientes()"></label>
+      <div class="seg"><button class="${filtroPac.sit === 'ativo' ? 'ativo' : ''}" onclick="filtroPac.sit='ativo'; desenhar()">Ativos</button><button class="${filtroPac.sit === 'alta' ? 'ativo' : ''}" onclick="filtroPac.sit='alta'; desenhar()">Com alta</button></div>
+      <div class="cab-lista"><b id="titulo-lista"></b><button class="ordem" onclick="filtroPac.ordem = filtroPac.ordem==='nome' ? 'ultima' : 'nome'; listarPacientes()" id="btn-ordem"></button></div>
+      <div id="lista-pac" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>`;
+  listarPacientes();
+};
+function listarPacientes() {
+  const ult = ultimasConsultas();
+  const termo = filtroPac.busca.trim().toLowerCase();
+  const semAcento = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  let lista = pacientes().filter((p) => situacao(p) === filtroPac.sit);
+  if (termo) {
+    const t = semAcento(termo);
+    lista = lista.filter((p) => {
+      const queixas = fases(p).map((f) => anamneseDaFase(p.id, f.numero).queixaPrincipal || '').join(' ');
+      return [p.nome, p.cpf, p.celular, p.telefone, p.bairro, p.cidade, queixas].some((v) => semAcento(v).includes(t));
+    });
+  }
+  if (filtroPac.ordem === 'nome') lista.sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
+  else lista.sort((a, b) => String(ult[b.id] || '').localeCompare(String(ult[a.id] || '')) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
+  document.getElementById('titulo-lista').textContent = `${filtroPac.sit === 'ativo' ? 'Pacientes ativos' : 'Com alta'} (${lista.length})`;
+  document.getElementById('btn-ordem').textContent = filtroPac.ordem === 'nome' ? 'Ordenar: Nome ▲' : 'Ordenar: Última consulta ▼';
+  document.getElementById('lista-pac').innerHTML = lista.length ? lista.map((p) => {
+    const q = anamneseDaFase(p.id, faseAtual(p)).queixaPrincipal || '';
+    const linha2 = [p.celular || p.telefone, p.bairro].filter(Boolean).join(' · ');
+    const linha3 = [q, ult[p.id] ? 'Última consulta: ' + dataBR(ult[p.id]) : ''].filter(Boolean).join(' · ');
+    return `<div class="cartao item-pac"><button class="abrir" onclick="ir('ficha','${esc(p.id)}')"><span class="n">${esc(p.nome)}</span>${linha2 ? `<span class="d">${esc(linha2)}</span>` : ''}${linha3 ? `<span class="d">${esc(linha3)}</span>` : ''}</button>
+      <button class="olho" aria-label="Visualizar" onclick="espiarPaciente('${esc(p.id)}')">${ICONE.olho}</button></div>`;
+  }).join('') : '<p class="vazio">Nenhum paciente encontrado.</p>';
+}
+function espiarPaciente(id) {
+  const p = pacientes().find((x) => x.id === id); if (!p) return;
+  const ult = ultimasConsultas()[id];
+  const prox = G.raq_agendamentos.filter((a) => a.pacienteId === id && a.status !== 'Cancelada' && a.data >= hojeISO()).sort((a, b) => (a.data + a.horario).localeCompare(b.data + b.horario))[0];
+  const q = anamneseDaFase(id, faseAtual(p)).queixaPrincipal;
+  abrirFolha(`<h2>${esc(p.nome)}</h2><div class="dados cartao">
+    ${[['Idade', idade(p.nascimento)], ['Celular', p.celular], ['Última consulta', dataBR(ult)], ['Próximo agendamento', prox ? `${dataBR(prox.data)}, ${prox.horario || ''}` : ''], ['Queixa principal' + (fases(p).length > 1 ? ' — Fase ' + faseAtual(p) : ''), q]]
+      .filter(([, v]) => v).map(([r, v]) => `<div class="l"><span>${esc(r)}</span><span>${esc(v)}</span></div>`).join('')}</div>
+    <button class="btn" style="margin-top:12px" onclick="this.closest('.veu').remove(); ir('ficha','${esc(id)}')">Abrir a ficha</button>`);
+}
+
+// ====================== ficha ======================
+let faseFicha = {};
+TELAS.ficha = (id) => {
+  const p = pacientes().find((x) => x.id === id);
+  if (!p) { voltar(); return; }
+  if (!faseFicha[id]) faseFicha[id] = faseAtual(p);
+  const n = faseFicha[id];
+  const ult = ultimasConsultas()[id];
+  const q = anamneseDaFase(id, n).queixaPrincipal || '';
+  const fs = fases(p).map((f) => f.numero).sort((a, b) => b - a);
+  app.innerHTML = `${topo('Ficha do paciente')}
+    <div class="faixa-pac"><p><b>${esc(p.nome)}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}${ult ? ' · Última consulta: ' + esc(dataBR(ult)) : ''}</p>${q ? `<p>${esc(q)}</p>` : ''}</div>
+    <div class="conteudo">
+      ${situacao(p) === 'alta' ? '<p class="aviso">Paciente com alta.</p>' : ''}
+      ${fs.length > 1 ? `<label class="campo" style="font-size:14px">Fase<select style="border:1.5px solid var(--verde-claro);font-weight:600;color:var(--verde-medio)" onchange="faseFicha['${esc(id)}']=Number(this.value); desenhar()">
+        ${fs.map((f) => { const qq = anamneseDaFase(id, f).queixaPrincipal || ''; return `<option value="${f}" ${f === n ? 'selected' : ''}>Fase ${f}${f === faseAtual(p) ? ' (atual)' : ''}${qq ? ' — ' + esc(qq.length > 28 ? qq.slice(0, 28) + '…' : qq) : ''}</option>`; }).join('')}</select></label>` : ''}
+      <div class="submenus">
+        <button class="sm largo" onclick="ir('dados','${esc(id)}')">Dados cadastrais</button>
+        <button class="sm breve" onclick="ir('embreve','Anamnese')">Anamnese</button>
+        <button class="sm breve" onclick="ir('embreve','Exame físico')">Exame físico</button>
+        <button class="sm" onclick="ir('consultas','${esc(id)}')">Consultas</button>
+        <button class="sm breve" onclick="ir('embreve','Financeiro')">Financeiro</button>
+        <button class="sm breve" onclick="ir('embreve','Agenda')">Agenda</button>
+        <button class="sm breve" onclick="ir('embreve','Arquivos anexados')">Arquivos anexados</button>
+        <button class="sm breve" onclick="ir('embreve','Documentos avulsos')">Documentos avulsos</button>
+        <button class="sm breve" onclick="ir('embreve','Exportar ficha')">Exportar ficha</button>
+      </div>
+    </div>`;
+};
+TELAS.dados = (id) => {
+  const p = pacientes().find((x) => x.id === id) || {};
+  const linhas = (campos) => campos.map(([r, v]) => `<div class="l"><span>${esc(r)}</span><span>${esc(v || '—')}</span></div>`).join('');
+  app.innerHTML = `${topo('Dados cadastrais')}
+    <div class="conteudo">
+      <p class="grupo">Identificação</p>
+      <div class="cartao dados">${linhas([['Data do cadastro', dataBR(p.dataCadastro)], ['Nome completo', p.nome], ['Data de nascimento', dataBR(p.nascimento)], ['Idade', idade(p.nascimento)], ['Sexo', p.sexo], ['Naturalidade', p.naturalidade], ['Estado civil', p.estadoCivil], ['Escolaridade', p.escolaridade], ['Profissão', p.profissao], ['Identidade', p.identidade], ['CPF', p.cpf]])}</div>
+      <p class="grupo">Contato</p>
+      <div class="cartao dados">${linhas([['E-mail', p.email], ['Telefone', p.telefone], ['Celular', p.celular]])}</div>
+      <p class="grupo">Endereço</p>
+      <div class="cartao dados">${linhas([['CEP', p.cep], ['Logradouro', p.logradouro], ['Bairro', p.bairro], ['Cidade', p.cidade], ['Estado', p.estado]])}</div>
+    </div>`;
+};
+let consultasDesc = true;
+TELAS.consultas = (id) => {
+  const p = pacientes().find((x) => x.id === id) || {};
+  const n = faseFicha[id] || faseAtual(p);
+  const lista = G.raq_consultas.filter((c) => c.pacienteId === id && (fases(p).length === 1 || faseDaConsulta(c) === n))
+    .sort((a, b) => consultasDesc ? String(b.data).localeCompare(String(a.data)) : String(a.data).localeCompare(String(b.data)));
+  app.innerHTML = `${topo('Consultas' + (fases(p).length > 1 ? ' — Fase ' + n : ''))}
+    <div class="conteudo">
+      <button class="ordem ordem-data" onclick="consultasDesc=!consultasDesc; desenhar()">${consultasDesc ? 'Data ▼ mais recentes' : 'Data ▲ mais antigas'}</button>
+      ${lista.length ? lista.map((c) => `<div class="cartao consulta"><div class="t"><b>${esc(dataBR(c.data))}</b><button class="olho" style="width:36px;height:36px" aria-label="Visualizar" onclick="verConsulta('${esc(c.id)}')">${ICONE.olho}</button></div>
+          ${c.tratamento ? `<div class="x"><i>Tratamento:</i> ${esc(c.tratamento)}</div>` : ''}${c.evolucao ? `<div class="x"><i>Evolução:</i> ${esc(c.evolucao)}</div>` : ''}</div>`).join('')
+        : '<p class="vazio">Nenhuma consulta.</p>'}
+    </div>`;
+};
+function verConsulta(id) {
+  const c = G.raq_consultas.find((x) => x.id === id); if (!c) return;
+  abrirFolha(`<h2>Consulta de ${esc(dataBR(c.data))}</h2><div class="cartao" style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+    ${[['Tratamento', c.tratamento], ['Evolução', c.evolucao], ['Observações', c.observacoes]].map(([r, v]) => `<div class="consulta" style="padding:0"><div class="x"><i>${r}:</i></div><div class="x">${esc(v || '—')}</div></div>`).join('')}</div>`);
+}
+
+// ====================== configurações ======================
+TELAS.configuracoes = () => {
+  app.innerHTML = `${topo('Configurações')}
+    <div class="conteudo">
+      <p class="grupo">Usuário</p>
+      <div class="cartao dados"><div class="l"><span>Nome</span><span>${esc(usuario.nome || usuario.login)}</span></div><div class="l"><span>Usuário</span><span>${esc(usuario.login)}</span></div></div>
+      <p class="grupo">Sincronização</p>
+      <div class="cartao dados"><div class="l"><span>Última atualização</span><span>${esc(quandoCurto(estado.ultima))}</span></div></div>
+      <button class="btn" onclick="atualizarComGoogle()">Atualizar agora</button>
+      <p class="grupo">Sobre</p>
+      <div class="cartao dados"><div class="l"><span>Versão</span><span>celular 0.1 (consulta)</span></div></div>
+      <p style="font-size:12px;color:var(--texto-ter);margin:4px 2px">Usuários, backup, registro de atividades e licença ficam no notebook.</p>
+      <button class="link" onclick="desligarCelular()">Tirar os dados deste celular</button>
+    </div>`;
+};
+async function desligarCelular() {
+  if (!confirm('Tirar os dados deste celular?\n\nNada é apagado no notebook nem no Google Drive. Para usar de novo, será preciso o código do cofre.')) return;
+  await A.apagarTudo(); D.esquecer(); chave = null; estado = null; G = null; usuario = null;
+  pilha = [['configurar', [1]]]; desenhar();
+}
+
+TELAS.embreve = (titulo) => {
+  app.innerHTML = `${topo(titulo)}<div class="conteudo"><p class="vazio">Esta parte chega na próxima versão do celular.</p></div>`;
+};
+
+iniciar();
+if ('serviceWorker' in navigator && !D.modoTeste) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
