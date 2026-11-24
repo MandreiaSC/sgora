@@ -195,7 +195,7 @@ function etiquetaStatus(s) { const c = CORES_STATUS[s] || ['#5c7570', '#eef2f1']
 // ====================== utilidades de tela ======================
 function avisar(texto) {
   const a = document.createElement('div'); a.className = 'aviso-flutuante'; a.textContent = texto;
-  document.body.appendChild(a); setTimeout(() => a.remove(), 2400);
+  document.body.appendChild(a); setTimeout(() => a.remove(), Math.min(9000, 2400 + texto.length * 40));
 }
 function topo(titulo, comVoltar = true) {
   return `<header class="topo">${comVoltar ? `<button class="voltar" aria-label="Voltar" onclick="voltar()">${ICONE.voltar}</button>` : '<span style="width:10px"></span>'}
@@ -336,9 +336,14 @@ const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
 const deB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 function lerBio() { try { return JSON.parse(localStorage.getItem(BIO) || '{}') || {}; } catch (e) { return {}; } }
 function gravarBio(v) { try { localStorage.setItem(BIO, JSON.stringify(v)); } catch (e) { /* nada */ } }
+// No iPhone, o app da Tela de Início às vezes responde "não disponível" mesmo com o Face ID ligado:
+// lá, tenta assim mesmo (se falhar, o aviso mostra o motivo).
 async function bioDisponivel() {
-  try { return !!(window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); } catch (e) { return false; }
+  if (!window.PublicKeyCredential || !navigator.credentials) return false;
+  try { if (await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()) return true; } catch (e) { /* segue */ }
+  return ehIOS;
 }
+const motivoBio = (e) => e && e.name ? ` (${e.name}${e.message ? ': ' + String(e.message).slice(0, 80) : ''})` : '';
 // "Impressão" da senha atual (curta, não serve para descobrir a senha): muda quando a senha muda no notebook
 async function marcaSenha(u) {
   const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('sgora-bio|' + u.salt + '|' + u.senhaHash));
@@ -362,7 +367,7 @@ async function entrarComBio() {
   try {
     cred = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)),
       allowCredentials: logins.map((l) => ({ type: 'public-key', id: deB64(b[l].id) })), userVerification: 'required', timeout: 60000 } });
-  } catch (e) { if (botao) botao.disabled = false; if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') avisar('Não foi possível usar ' + oBio() + '. Entre com a senha.'); return; }
+  } catch (e) { if (botao) botao.disabled = false; if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') avisar('Não foi possível usar ' + oBio() + '. Entre com a senha.' + motivoBio(e)); return; }
   const idUsado = b64(cred.rawId);
   const login = logins.find((l) => b[l].id === idUsado);
   const u = login && G.raq_usuarios.find((x) => String(x.login || '').toLowerCase() === login.toLowerCase());
@@ -387,7 +392,7 @@ async function oferecerBio(u) {
 async function ligarBioDaFolha(botao) {
   botao.disabled = true;
   try { await ligarBio(usuario); botao.closest('.veu').remove(); avisar(bioLigado(true)); }
-  catch (e) { botao.disabled = false; if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') avisar('Não foi possível ligar ' + oBio() + '.'); }
+  catch (e) { botao.disabled = false; if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') avisar('Não foi possível ligar ' + oBio() + '.' + motivoBio(e)); }
 }
 // 5 minutos fora do aplicativo: volta para a tela de entrar (os dados continuam no aparelho, criptografados)
 let saiuEm = 0;
@@ -599,7 +604,7 @@ async function alternarBio() {
   try {
     if (lerBio()[usuario.login]) { desligarBio(usuario.login); avisar(bioLigado(false)); }
     else { await ligarBio(usuario); avisar(bioLigado(true)); }
-  } catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') avisar('Não foi possível ligar ' + oBio() + '.'); }
+  } catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') avisar('Não foi possível ligar ' + oBio() + '.' + motivoBio(e)); }
   c.disabled = false; mostrarChaveBio();
 }
 async function desligarCelular() {
