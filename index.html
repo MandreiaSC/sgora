@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-BR">
 <head>
 <!-- SGO_RA — Sistema de Gestão em Osteopatia. © 2026 Marcia Sales. Todos os direitos reservados (Lei 9.609/1998). -->
@@ -21,11 +21,15 @@
   body{min-height:100vh;}
   button{font-family:inherit;}
   a{color:var(--verde-medio);}
-  .topo{background:var(--verde); color:#f2fbf9; padding:calc(env(safe-area-inset-top) + 10px) 10px 8px 4px; display:flex; align-items:center; gap:4px; position:sticky; top:0; z-index:5;}
+  .topo{background:var(--verde); color:#f2fbf9; padding:calc(env(safe-area-inset-top) + 16px) 14px 12px 4px; display:flex; align-items:center; gap:4px; position:sticky; top:0; z-index:5;}
   .topo .voltar{width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:#f2fbf9; background:none; border:0;}
-  .topo .titulo{flex:1; font-size:19px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .topo img{width:26px; height:30px; object-fit:contain; margin-right:4px;}
-  .conteudo{padding:14px; display:flex; flex-direction:column; gap:12px; padding-bottom:calc(env(safe-area-inset-bottom) + 24px);}
+  .topo .titulo{flex:1; font-size:20px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .marca-topo{display:flex; flex-direction:column; align-items:center; gap:2px; flex:none;}
+  .marca-topo img{width:34px; height:38px; object-fit:contain;}
+  .marca-topo span{font-size:10px; font-weight:700; letter-spacing:1px; color:#f2fbf9;}
+  .marca-topo.grande img{width:46px; height:52px;}
+  .marca-topo.grande span{font-size:11.5px;}
+  .conteudo{padding:16px; display:flex; flex-direction:column; gap:14px; padding-bottom:calc(env(safe-area-inset-bottom) + 24px);}
   .cartao{background:#fff; border-radius:10px; box-shadow:var(--sombra);}
   .btn{min-height:48px; display:flex; align-items:center; justify-content:center; gap:8px; border-radius:10px; background:var(--verde); color:#fff; font-size:16px; font-weight:600; border:0; padding:0 16px; width:100%; cursor:pointer;}
   .btn.claro{background:#fff; color:var(--verde); border:1px solid var(--borda);}
@@ -54,26 +58,35 @@
   .passos span.feito{background:var(--verde-claro);}
   .barra{height:8px; border-radius:4px; background:var(--borda); overflow:hidden;} .barra div{height:100%; background:var(--verde-claro); width:0; transition:width .2s;}
   /* hoje */
-  .cabeca-hoje{background:var(--verde); color:#f2fbf9; padding:calc(env(safe-area-inset-top) + 12px) 14px 12px; display:flex; align-items:center; gap:12px;}
-  .avatar{width:42px; height:42px; border-radius:50%; border:2px solid var(--menta); background:var(--menta); color:var(--verde); font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; overflow:hidden;}
+  /* Hoje: ocupa exatamente a tela. A Agenda do dia cresce no espaço livre; com muitos agendamentos, rola por dentro
+     e os botões ficam sempre à vista embaixo. Em tela muito baixa, a página toda rola. */
+  .tela-hoje{height:100vh; height:100dvh; display:flex; flex-direction:column;}
+  .tela-hoje .conteudo{flex:1; min-height:0; overflow-y:auto;}
+  .tela-hoje .agenda-dia{flex:1 1 auto; min-height:170px; display:flex; flex-direction:column; overflow:hidden;}
+  .lista-ag{flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+  .lista-ag .vazio{padding:28px 8px;}
+  .cabeca-hoje{background:var(--verde); color:#f2fbf9; padding:calc(env(safe-area-inset-top) + 22px) 16px 18px; display:flex; align-items:center; gap:14px;}
+  .avatar{width:52px; height:52px; border-radius:50%; border:2px solid var(--menta); background:var(--menta); color:var(--verde); font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; overflow:hidden;}
   .avatar img{width:100%; height:100%; object-fit:cover;}
-  .agenda-dia .faixa{background:var(--verde-claro); color:#fff; display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px 10px 0 0;}
-  .agenda-dia .faixa b{flex:1; font-size:16px;}
+  .agenda-dia .faixa{background:var(--verde-claro); color:#fff; display:flex; align-items:center; gap:8px; padding:12px 14px; border-radius:10px 10px 0 0;}
+  .agenda-dia .faixa b{flex:1; font-size:17px;}
   .contador{font-size:13px; font-weight:700; background:rgba(255,255,255,0.25); border-radius:999px; padding:2px 9px;}
-  .linha-ag{display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--borda); color:var(--texto); text-decoration:none; background:none; border-left:0; border-right:0; border-top:0; width:100%; text-align:left; font:inherit;}
+  .linha-ag{display:flex; align-items:center; gap:12px; padding:13px 14px; font-size:16px; border-bottom:1px solid var(--borda); color:var(--texto); text-decoration:none; background:none; border-left:0; border-right:0; border-top:0; width:100%; text-align:left; font:inherit;}
   .linha-ag:last-child{border-bottom:0;}
-  .linha-ag .hora{width:46px; font-size:15px; font-weight:700; color:var(--verde-medio);}
-  .linha-ag .nome{flex:1; font-size:15px; min-width:0;}
-  .dupla{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px;}
-  .mini{border-radius:10px; padding:10px 12px; box-shadow:var(--sombra); min-width:0;}
-  .mini p{margin:0 0 4px; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:700;}
-  .mini ul{margin:0; padding-left:16px; font-size:13px; line-height:1.45;}
+  .linha-ag .hora{width:50px; font-size:16px; font-weight:700; color:var(--verde-medio);}
+  .linha-ag .nome{flex:1; font-size:16px; min-width:0;}
+  .dupla{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px;}
+  .mini{border-radius:10px; padding:13px 14px; box-shadow:var(--sombra); min-width:0; min-height:96px;}
+  .mini p{margin:0 0 6px; display:flex; align-items:center; gap:6px; font-size:15px; font-weight:700;}
+  .mini ul{margin:0; padding-left:16px; font-size:14px; line-height:1.5;}
   .mini.lembretes{background:#fdf1f0; border-left:4px solid #c0392b;} .mini.lembretes p{color:#a33025;}
   .mini.aniversario{background:#fffbea; border-left:4px solid #e0a030;} .mini.aniversario p{color:#8a5a00;}
-  .botoes-menu{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; margin-top:4px;}
-  .bt{min-height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border-radius:10px; background:var(--verde); color:#f2fbf9; font-size:15px; font-weight:600; border:0; box-shadow:var(--sombra); cursor:pointer;}
-  .bt.sair{grid-column:1 / -1; min-height:48px; flex-direction:row; background:#fff; color:var(--verde); border:1px solid var(--borda);}
-  .situacao-sinc{margin:2px 0 0; display:flex; align-items:center; justify-content:center; gap:6px; font-size:13px; color:var(--texto-sec); background:none; border:0; width:100%;}
+  .botoes-menu{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; margin-top:auto; padding-top:4px;}
+  .bt{min-height:88px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; border-radius:12px; background:var(--verde); color:#f2fbf9; font-size:16px; font-weight:600; border:0; box-shadow:var(--sombra); cursor:pointer;}
+  .bt svg{width:28px; height:28px;}
+  .bt.sair{grid-column:1 / -1; min-height:54px; flex-direction:row; background:#fff; color:var(--verde); border:1px solid var(--borda);}
+  .bt.sair svg{width:24px; height:24px;}
+  .situacao-sinc{margin:2px 0 0; min-height:36px; display:flex; align-items:center; justify-content:center; gap:6px; font-size:13px; color:var(--texto-sec); background:none; border:0; width:100%;}
   /* pacientes */
   .cab-lista{display:flex; justify-content:space-between; align-items:center; gap:8px;}
   .cab-lista b{font-size:15px; color:var(--verde-escuro);}
@@ -110,6 +123,8 @@
   .veu{position:fixed; inset:0; background:rgba(11,55,51,.45); z-index:20; display:flex; align-items:flex-end;}
   .folha{background:#fff; width:100%; max-height:88vh; overflow:auto; border-radius:16px 16px 0 0; padding:16px 16px calc(env(safe-area-inset-bottom) + 18px);}
   .folha h2{margin:0 0 10px; font-size:18px; color:var(--verde-escuro);}
+  .seg-bio{min-width:104px; min-height:38px; border-radius:999px; border:1px solid var(--borda); background:#eef2f1; color:var(--texto-sec); font-size:14px; font-weight:700; flex:none;}
+  .seg-bio.ligado{background:var(--verde-claro); border-color:var(--verde-claro); color:#fff;}
   .aviso-flutuante{position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 24px); transform:translateX(-50%); background:var(--verde-escuro); color:#fff; padding:10px 16px; border-radius:10px; font-size:14px; z-index:30; max-width:90vw; text-align:center;}
 </style>
 </head>
@@ -136,6 +151,7 @@ const ICONE = {
   financeiro: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/><path d="M6 9.5h.01"/><path d="M18 15.5h.01"/></svg>',
   config: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3"/><path d="M12 18.5v3"/><path d="M2.5 12h3"/><path d="M18.5 12h3"/><path d="M5.3 5.3l2.1 2.1"/><path d="M16.6 16.6l2.1 2.1"/><path d="M5.3 18.7l2.1-2.1"/><path d="M16.6 7.4l2.1-2.1"/></svg>',
   sair: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/></svg>',
+  rosto: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M20 16v2a2 2 0 0 1-2 2h-2"/><path d="M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9.5v1"/><path d="M15 9.5v1"/><path d="M12 9.5v4h-1"/><path d="M9.5 16a3.5 3.5 0 0 0 5 0"/></svg>',
   nuvem: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f9e8f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.3 12.5 3.5 3.5 0 0 0 6.5 19z"/><path d="M9.5 14.5l2 2 3.5-3.5"/></svg>',
 };
 
@@ -183,14 +199,15 @@ function avisar(texto) {
 }
 function topo(titulo, comVoltar = true) {
   return `<header class="topo">${comVoltar ? `<button class="voltar" aria-label="Voltar" onclick="voltar()">${ICONE.voltar}</button>` : '<span style="width:10px"></span>'}
-    <span class="titulo">${esc(titulo)}</span><img src="maos.png" alt=""></header>`;
+    <span class="titulo">${esc(titulo)}</span>${MARCA()}</header>`;
 }
+const MARCA = (grande) => `<span class="marca-topo${grande ? ' grande' : ''}"><img src="maos.png" alt=""><span>SGO_RA</span></span>`;
 function ir(tela, ...args) { pilha.push([tela, args]); desenhar(); window.scrollTo(0, 0); }
 function voltar() { if (pilha.length > 1) pilha.pop(); desenhar(); window.scrollTo(0, 0); }
 function desenhar() { const [tela, args] = pilha[pilha.length - 1]; TELAS[tela](...args); }
-function abrirFolha(html) {
+function abrirFolha(html, textoFechar = 'Fechar') {
   const v = document.createElement('div'); v.className = 'veu';
-  v.innerHTML = `<div class="folha">${html}<button class="btn claro" style="margin-top:14px" onclick="this.closest('.veu').remove()">Fechar</button></div>`;
+  v.innerHTML = `<div class="folha">${html}<button class="btn claro" style="margin-top:14px" onclick="this.closest('.veu').remove()">${esc(textoFechar)}</button></div>`;
   v.addEventListener('click', (e) => { if (e.target === v) v.remove(); });
   document.body.appendChild(v);
 }
@@ -261,10 +278,14 @@ async function configurarCodigo() {
 // ====================== entrar ======================
 const TENTATIVAS = 'sgora_tentativas';
 TELAS.entrar = (erro) => {
+  const temBio = Object.keys(lerBio()).length > 0;
+  let ultimo = ''; try { ultimo = localStorage.getItem(ULTIMO_LOGIN) || ''; } catch (e) { /* nada */ }
   app.innerHTML = `<div class="tela-entrada"><img src="maos.png" alt=""><p class="marca">SGO_RA</p>
     <form class="quadro-entrada" onsubmit="event.preventDefault(); entrarNoSistema()">
       <div><h1>Sistema de gestão em osteopatia</h1><p class="sub">acesso restrito</p></div>
-      <label class="campo">Usuário<input id="login-usuario" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="nome.sobrenome"></label>
+      ${temBio ? `<button type="button" class="btn medio" id="btn-bio" style="min-height:56px;font-size:18px" onclick="entrarComBio()">${ICONE.rosto}Entrar com ${esc(nomeBio())}</button>
+        <p class="sub" style="margin:0">ou entre com a senha</p>` : ''}
+      <label class="campo">Usuário<input id="login-usuario" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="nome.sobrenome" value="${esc(ultimo)}"></label>
       <label class="campo">Senha<span class="senha"><input id="login-senha" type="password" autocomplete="current-password" placeholder="Digite sua senha">
         <button type="button" aria-label="Mostrar senha" onclick="const i=document.getElementById('login-senha'); i.type = i.type==='password'?'text':'password'">${ICONE.olhoCinza}</button></span></label>
       ${erro ? `<p class="aviso erro">${esc(erro)}</p>` : ''}
@@ -287,12 +308,87 @@ async function entrarNoSistema() {
     TELAS.entrar(reg.ate > Date.now() ? 'Muitas tentativas. Aguarde 5 minutos.' : 'Usuário ou senha incorretos.'); return;
   }
   delete t[login]; try { localStorage.setItem(TENTATIVAS, JSON.stringify(t)); } catch (e) { /* nada */ }
-  if (u.trocarSenha) { TELAS.entrar('Troque a senha provisória no notebook antes de usar o celular.'); return; }
-  if (!FUNCOES_COM_CELULAR.includes(u.funcao)) { TELAS.entrar('Este usuário não tem acesso ao celular.'); return; }
+  if (!podeEntrar(u)) return;
+  await concluirEntrada(u);
+  oferecerBio(u);
+}
+function podeEntrar(u) {
+  if (u.trocarSenha) { TELAS.entrar('Troque a senha provisória no notebook antes de usar o celular.'); return false; }
+  if (!FUNCOES_COM_CELULAR.includes(u.funcao)) { TELAS.entrar('Este usuário não tem acesso ao celular.'); return false; }
+  return true;
+}
+async function concluirEntrada(u) {
+  try { localStorage.setItem(ULTIMO_LOGIN, u.login); } catch (e) { /* nada */ }
   usuario = u; pilha = [['hoje', []]]; desenhar();
   atualizar(true);
 }
 function sair() { usuario = null; pilha = [['entrar', []]]; desenhar(); }
+
+// ====================== Face ID / digital (chave de acesso do próprio aparelho) ======================
+// Nada sai do celular: o aparelho confere o rosto ou a digital e libera a entrada. A senha continua valendo.
+// Se a senha mudar no notebook, o Face ID deste usuário se desliga e é preciso entrar uma vez com a senha nova.
+const BIO = 'sgora_bio', BIO_PERGUNTADO = 'sgora_bio_perguntado', ULTIMO_LOGIN = 'sgora_ultimo_login';
+const ehIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const nomeBio = () => ehIOS ? 'Face ID' : 'biometria';
+const oBio = () => ehIOS ? 'o Face ID' : 'a biometria';
+const bioLigado = (sim) => ehIOS ? (sim ? 'Face ID ligado.' : 'Face ID desligado.') : (sim ? 'Biometria ligada.' : 'Biometria desligada.');
+const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const deB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+function lerBio() { try { return JSON.parse(localStorage.getItem(BIO) || '{}') || {}; } catch (e) { return {}; } }
+function gravarBio(v) { try { localStorage.setItem(BIO, JSON.stringify(v)); } catch (e) { /* nada */ } }
+async function bioDisponivel() {
+  try { return !!(window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); } catch (e) { return false; }
+}
+// "Impressão" da senha atual (curta, não serve para descobrir a senha): muda quando a senha muda no notebook
+async function marcaSenha(u) {
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('sgora-bio|' + u.salt + '|' + u.senhaHash));
+  return b64(h).slice(0, 12);
+}
+async function ligarBio(u) {
+  const cred = await navigator.credentials.create({ publicKey: {
+    challenge: crypto.getRandomValues(new Uint8Array(32)),
+    rp: { name: 'SGO_RA' },
+    user: { id: new TextEncoder().encode(String(u.id)), name: u.login, displayName: u.nome || u.login },
+    pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+    authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'discouraged' },
+    attestation: 'none', timeout: 60000 } });
+  const b = lerBio(); b[u.login] = { id: b64(cred.rawId), marca: await marcaSenha(u) }; gravarBio(b);
+}
+function desligarBio(login) { const b = lerBio(); delete b[login]; gravarBio(b); }
+async function entrarComBio() {
+  const b = lerBio(); const logins = Object.keys(b); if (!logins.length) return;
+  const botao = document.getElementById('btn-bio'); if (botao) botao.disabled = true;
+  let cred;
+  try {
+    cred = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)),
+      allowCredentials: logins.map((l) => ({ type: 'public-key', id: deB64(b[l].id) })), userVerification: 'required', timeout: 60000 } });
+  } catch (e) { if (botao) botao.disabled = false; if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') avisar('Não foi possível usar ' + oBio() + '. Entre com a senha.'); return; }
+  const idUsado = b64(cred.rawId);
+  const login = logins.find((l) => b[l].id === idUsado);
+  const u = login && G.raq_usuarios.find((x) => String(x.login || '').toLowerCase() === login.toLowerCase());
+  if (!u) { if (login) desligarBio(login); TELAS.entrar('Usuário não encontrado. Entre com a senha.'); return; }
+  if (b[login].marca !== await marcaSenha(u)) {
+    desligarBio(login);
+    try { localStorage.setItem(BIO_PERGUNTADO, JSON.stringify(JSON.parse(localStorage.getItem(BIO_PERGUNTADO) || '[]').filter((l) => l !== login))); } catch (e) { /* nada */ }
+    TELAS.entrar('A senha mudou no notebook. Entre com a senha nova para usar ' + oBio() + ' de novo.'); return;
+  }
+  if (!podeEntrar(u)) return;
+  await concluirEntrada(u);
+}
+// Pergunta só na primeira entrada com senha deste usuário neste celular
+async function oferecerBio(u) {
+  let perguntados = []; try { perguntados = JSON.parse(localStorage.getItem(BIO_PERGUNTADO) || '[]'); } catch (e) { perguntados = []; }
+  if (lerBio()[u.login] || perguntados.includes(u.login) || !(await bioDisponivel())) return;
+  perguntados.push(u.login); try { localStorage.setItem(BIO_PERGUNTADO, JSON.stringify(perguntados)); } catch (e) { /* nada */ }
+  abrirFolha(`<h2>Usar ${esc(oBio())} para entrar?</h2>
+    <p style="margin:0 0 14px;font-size:15px;color:var(--texto-sec)">Na próxima vez, você entra sem digitar a senha. A senha continua valendo. Você pode mudar isso em Configurações.</p>
+    <button class="btn" id="btn-ligar-bio" onclick="ligarBioDaFolha(this)">${ICONE.rosto}Usar ${esc(oBio())}</button>`, 'Agora não');
+}
+async function ligarBioDaFolha(botao) {
+  botao.disabled = true;
+  try { await ligarBio(usuario); botao.closest('.veu').remove(); avisar(bioLigado(true)); }
+  catch (e) { botao.disabled = false; if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') avisar('Não foi possível ligar ' + oBio() + '.'); }
+}
 // 5 minutos fora do aplicativo: volta para a tela de entrar (os dados continuam no aparelho, criptografados)
 let saiuEm = 0;
 document.addEventListener('visibilitychange', () => {
@@ -339,15 +435,15 @@ TELAS.hoje = () => {
   const mmdd = hoje.slice(5);
   const aniversario = pacientes().filter((p) => ['ativo', 'alta'].includes(situacao(p)) && p.nascimento && p.nascimento.slice(5, 10) === mmdd);
   const iniciais = (nomeExibicao(usuario) || '?').replace(/^Dr[a]?\.\s*/i, '').slice(0, 2).toUpperCase();
-  app.innerHTML = `
+  app.innerHTML = `<div class="tela-hoje">
     <header class="cabeca-hoje"><span class="avatar">${usuario.foto ? `<img src="${esc(usuario.foto)}" alt="">` : esc(iniciais)}</span>
-      <span style="flex:1;min-width:0"><span style="display:block;font-size:18px;font-weight:700">${esc(saudacao())}, ${esc(nomeExibicao(usuario))}!</span><span style="font-size:13px;color:var(--menta)">${esc(dataPorExtenso())}</span></span>
-      <img src="maos.png" alt="" style="width:26px;height:30px;object-fit:contain"></header>
+      <span style="flex:1;min-width:0"><span style="display:block;font-size:20px;font-weight:700">${esc(saudacao())}, ${esc(nomeExibicao(usuario))}!</span><span style="font-size:14px;color:var(--menta)">${esc(dataPorExtenso())}</span></span>
+      ${MARCA(true)}</header>
     <div class="conteudo">
-      <section class="cartao agenda-dia"><div class="faixa">${ICONE.agenda}<b>Agenda do dia</b><span class="contador">${ag.length}</span></div>
+      <section class="cartao agenda-dia"><div class="faixa">${ICONE.agenda}<b>Agenda do dia</b><span class="contador">${ag.length}</span></div><div class="lista-ag">
         ${ag.length ? ag.map((a) => `<button class="linha-ag" onclick="${a.pacienteId ? `ir('ficha','${esc(a.pacienteId)}')` : ''}"><span class="hora">${esc(a.horario || '')}</span>
           <span class="nome">${a.pacienteId ? esc(nomePaciente(a.pacienteId)) : `${esc(a.pacienteNomeAvulso || '')} <span style="font-size:12px;color:#8a5a00">(não cadastrado)</span>`}</span>${etiquetaStatus(a.status)}</button>`).join('')
-          : '<p class="vazio">Nenhum agendamento hoje.</p>'}</section>
+          : '<p class="vazio">Nenhum agendamento hoje.</p>'}</div></section>
       <div class="dupla">
         <section class="mini lembretes"><p>Lembretes ${lembretes.length ? `<span style="font-size:12px;background:#f6d3cf;border-radius:999px;padding:0 7px">${lembretes.length}</span>` : ''}</p>
           ${lembretes.length ? `<ul>${lembretes.slice(0, 5).map((l) => `<li>${esc(l.texto)}</li>`).join('')}</ul>` : '<p style="font-weight:400;font-size:13px;color:#5c7570;margin:0">Nenhum lembrete.</p>'}</section>
@@ -362,7 +458,7 @@ TELAS.hoje = () => {
         <button class="bt sair" onclick="sair()">${ICONE.sair}Sair</button>
       </div>
       <button class="situacao-sinc" id="situacao-sinc" onclick="tocarSituacao()">${ICONE.nuvem}<span>${esc(textoSituacao())}</span></button>
-    </div>`;
+    </div></div>`;
 };
 
 // ====================== pacientes ======================
@@ -480,15 +576,32 @@ TELAS.configuracoes = () => {
     <div class="conteudo">
       <p class="grupo">Usuário</p>
       <div class="cartao dados"><div class="l"><span>Nome</span><span>${esc(usuario.nome || usuario.login)}</span></div><div class="l"><span>Usuário</span><span>${esc(usuario.login)}</span></div></div>
+      <div id="bloco-bio" style="display:none;flex-direction:column;gap:14px"><p class="grupo">Acesso</p>
+        <div class="cartao dados"><div class="l" style="align-items:center"><span>Entrar com ${esc(nomeBio())}</span>
+          <button class="seg-bio" id="chave-bio" onclick="alternarBio()"></button></div></div></div>
       <p class="grupo">Sincronização</p>
       <div class="cartao dados"><div class="l"><span>Última atualização</span><span>${esc(quandoCurto(estado.ultima))}</span></div></div>
       <button class="btn" onclick="atualizarComGoogle()">Atualizar agora</button>
       <p class="grupo">Sobre</p>
-      <div class="cartao dados"><div class="l"><span>Versão</span><span>celular 0.1 (consulta)</span></div></div>
+      <div class="cartao dados"><div class="l"><span>Versão</span><span>celular 0.2 (consulta)</span></div></div>
       <p style="font-size:12px;color:var(--texto-ter);margin:4px 2px">Usuários, backup, registro de atividades e licença ficam no notebook.</p>
       <button class="link" onclick="desligarCelular()">Tirar os dados deste celular</button>
     </div>`;
+  bioDisponivel().then((sim) => { const b = document.getElementById('bloco-bio'); if (b && sim) { b.style.display = 'flex'; mostrarChaveBio(); } });
 };
+function mostrarChaveBio() {
+  const c = document.getElementById('chave-bio'); if (!c) return;
+  const ligado = !!lerBio()[usuario.login];
+  c.textContent = ligado ? 'Ligado' : 'Desligado'; c.classList.toggle('ligado', ligado);
+}
+async function alternarBio() {
+  const c = document.getElementById('chave-bio'); c.disabled = true;
+  try {
+    if (lerBio()[usuario.login]) { desligarBio(usuario.login); avisar(bioLigado(false)); }
+    else { await ligarBio(usuario); avisar(bioLigado(true)); }
+  } catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') avisar('Não foi possível ligar ' + oBio() + '.'); }
+  c.disabled = false; mostrarChaveBio();
+}
 async function desligarCelular() {
   if (!confirm('Tirar os dados deste celular?\n\nNada é apagado no notebook nem no Google Drive. Para usar de novo, será preciso o código do cofre.')) return;
   await A.apagarTudo(); D.esquecer(); chave = null; estado = null; G = null; usuario = null;
