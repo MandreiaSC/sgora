@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SGO_RA">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icone.png">
+<link rel="apple-touch-icon" href="icone_180.png">
 <title>SGO_RA</title>
 <style>
   :root{
@@ -581,10 +581,9 @@ TELAS.configuracoes = () => {
     <div class="conteudo">
       <p class="grupo">Usuário</p>
       <div class="cartao dados"><div class="l"><span>Nome</span><span>${esc(usuario.nome || usuario.login)}</span></div><div class="l"><span>Usuário</span><span>${esc(usuario.login)}</span></div></div>
-      <p class="grupo">Acesso</p>
+      <div id="bloco-bio" style="display:flex;flex-direction:column;gap:14px"><p class="grupo">Acesso</p>
       <div class="cartao dados"><div class="l" style="align-items:center"><span>Entrar com ${esc(nomeBio())}</span>
-        <button class="seg-bio" id="chave-bio" onclick="alternarBio()"></button></div>
-        <div class="l" id="bio-situacao" style="display:none;font-size:13px;color:var(--texto-sec)"></div></div>
+        <button class="seg-bio" id="chave-bio" onclick="alternarBio()"></button></div></div></div>
       <p class="grupo">Sincronização</p>
       <div class="cartao dados"><div class="l"><span>Última atualização</span><span>${esc(quandoCurto(estado.ultima))}</span></div></div>
       <button class="btn" onclick="atualizarComGoogle()">Atualizar agora</button>
@@ -594,14 +593,7 @@ TELAS.configuracoes = () => {
       <button class="link" onclick="desligarCelular()">Tirar os dados deste celular</button>
     </div>`;
   mostrarChaveBio();
-  // Diagnóstico simples: o que o aparelho diz sobre o Face ID/biometria
-  (async () => {
-    const s = document.getElementById('bio-situacao'); if (!s) return;
-    let txt;
-    if (!window.PublicKeyCredential || !navigator.credentials) txt = 'Este aparelho não oferece ' + nomeBio() + ' para o app.';
-    else { let r = null; try { r = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); } catch (e) { r = 'erro'; } txt = 'Aparelho: ' + (r === true ? 'disponível' : r === false ? 'diz que não está disponível' : 'não respondeu'); }
-    s.textContent = txt; s.style.display = 'flex';
-  })();
+  bioDisponivel().then((sim) => { if (!sim) { const g = document.getElementById('bloco-bio'); if (g) g.remove(); } });
 };
 function mostrarChaveBio() {
   const c = document.getElementById('chave-bio'); if (!c) return;
