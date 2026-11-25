@@ -25,7 +25,8 @@
   const apagarTudo = () => op('readwrite', (l) => l.clear());
 
   async function gravarEstado(chave, estado) {
-    const dados = new TextEncoder().encode(JSON.stringify({ aplicados: [...estado.aplicados], registros: [...estado.registros], ultima: estado.ultima || null }));
+    const dados = new TextEncoder().encode(JSON.stringify({ aplicados: [...estado.aplicados], registros: [...estado.registros], ultima: estado.ultima || null,
+      pendentes: [...(estado.pendentes || new Map())], aparelho: estado.aparelho || null }));
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const cifrado = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: new TextEncoder().encode('sgora-celular-estado') }, chave, dados);
     await gravar('estado', { iv, dados: new Uint8Array(cifrado) });
@@ -35,8 +36,22 @@
     if (!e) return null;
     const claro = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: e.iv, additionalData: new TextEncoder().encode('sgora-celular-estado') }, chave, e.dados);
     const o = JSON.parse(new TextDecoder().decode(claro));
-    return { aplicados: new Set(o.aplicados), registros: new Map(o.registros), ultima: o.ultima || null };
+    return { aplicados: new Set(o.aplicados), registros: new Map(o.registros), ultima: o.ultima || null,
+      pendentes: new Map(o.pendentes || []), aparelho: o.aparelho || ('cel' + Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, '0')).join('')) };
   }
 
-  window.SgoArmazem = { ler, gravar, apagarTudo, gravarEstado, lerEstado };
+  // textos guardados criptografados (ex.: aparência dos documentos, com a assinatura)
+  async function gravarTexto(chave, k, texto) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const cifrado = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: new TextEncoder().encode('sgora-celular-' + k) }, chave, new TextEncoder().encode(texto));
+    await gravar('t_' + k, { iv, dados: new Uint8Array(cifrado) });
+  }
+  async function lerTexto(chave, k) {
+    const e = await ler('t_' + k);
+    if (!e) return null;
+    try { return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: e.iv, additionalData: new TextEncoder().encode('sgora-celular-' + k) }, chave, e.dados)); }
+    catch { return null; }
+  }
+
+  window.SgoArmazem = { ler, gravar, apagarTudo, gravarEstado, lerEstado, gravarTexto, lerTexto };
 })();

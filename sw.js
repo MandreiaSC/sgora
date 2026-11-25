@@ -1,6 +1,6 @@
-﻿// SGO_RA no celular: guarda as peças do aplicativo para abrir sem internet. Os DADOS não passam por aqui
+// SGO_RA no celular: guarda as peças do aplicativo para abrir sem internet. Os DADOS não passam por aqui
 // (ficam criptografados no armazém do aparelho). Ao publicar uma versão nova, trocar VERSAO.
-const VERSAO = 'sgora-celular-v9';
+const VERSAO = 'sgora-celular-v11';
 const PECAS = ['./', 'index.html', 'nucleo.js', 'armazem.js', 'drive.js', 'maos.png', 'icone.png', 'icone_180.png', 'icone_192.png', 'icone_512.png', 'cadeia_frente.png', 'cadeia_costas.png', 'manifest.webmanifest'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(PECAS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== VERSAO).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });

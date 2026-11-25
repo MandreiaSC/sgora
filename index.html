@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
 <!-- SGO_RA — Sistema de Gestão em Osteopatia. © 2026 Marcia Sales. Todos os direitos reservados (Lei 9.609/1998). -->
@@ -162,6 +162,12 @@
   .totais{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px;}
   .totais div{background:#fff; border-radius:10px; box-shadow:var(--sombra); padding:10px 12px; font-size:13px; color:var(--texto-sec);}
   .totais b{display:block; font-size:17px; color:var(--verde-escuro);}
+  .form-cartao{padding:14px; display:flex; flex-direction:column; gap:12px;}
+  .campo-form{font-size:14px;}
+  .campo-form input, .campo-form select{height:48px; font-size:16px;}
+  .principal{color:var(--verde-claro); font-weight:900;}
+  .idade-form{margin:-4px 2px 0; font-size:14px; color:var(--texto-sec);}
+  .legenda-principal{margin:0 2px; font-size:13px; color:var(--texto-sec);}
   .seg-bio{min-width:104px; min-height:38px; border-radius:999px; border:1px solid var(--borda); background:#eef2f1; color:var(--texto-sec); font-size:14px; font-weight:700; flex:none;}
   .seg-bio.ligado{background:var(--verde-claro); border-color:var(--verde-claro); color:#fff;}
   .aviso-flutuante{position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 24px); transform:translateX(-50%); background:var(--verde-escuro); color:#fff; padding:10px 16px; border-radius:10px; font-size:14px; z-index:30; max-width:90vw; text-align:center;}
@@ -190,6 +196,7 @@ const ICONE = {
   financeiro: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/><path d="M6 9.5h.01"/><path d="M18 15.5h.01"/></svg>',
   config: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3"/><path d="M12 18.5v3"/><path d="M2.5 12h3"/><path d="M18.5 12h3"/><path d="M5.3 5.3l2.1 2.1"/><path d="M16.6 16.6l2.1 2.1"/><path d="M5.3 18.7l2.1-2.1"/><path d="M16.6 7.4l2.1-2.1"/></svg>',
   sair: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/></svg>',
+  mais: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>',
   rosto: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M20 16v2a2 2 0 0 1-2 2h-2"/><path d="M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9.5v1"/><path d="M15 9.5v1"/><path d="M12 9.5v4h-1"/><path d="M9.5 16a3.5 3.5 0 0 0 5 0"/></svg>',
   nuvem: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f9e8f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.3 12.5 3.5 3.5 0 0 0 6.5 19z"/><path d="M9.5 14.5l2 2 3.5-3.5"/></svg>',
 };
@@ -275,7 +282,11 @@ function topo(titulo, comVoltar = true) {
 }
 const MARCA = (grande) => `<span class="marca-topo${grande ? ' grande' : ''}"><img src="maos.png" alt=""><span>SGO_RA</span></span>`;
 function ir(tela, ...args) { pilha.push([tela, args]); desenhar(); window.scrollTo(0, 0); }
-function voltar() { if (pilha.length > 1) pilha.pop(); desenhar(); window.scrollTo(0, 0); }
+async function voltar() {
+  if (formularioAlterado && !(await perguntar('Existem alterações que ainda não foram salvas.\nDeseja sair sem salvar?', 'Sair sem salvar', 'Continuar editando'))) return;
+  formularioAlterado = false;
+  if (pilha.length > 1) pilha.pop(); desenhar(); window.scrollTo(0, 0);
+}
 function desenhar() { const [tela, args] = pilha[pilha.length - 1]; TELAS[tela](...args); }
 function abrirFolha(html, textoFechar = 'Fechar') {
   const v = document.createElement('div'); v.className = 'veu';
@@ -481,11 +492,13 @@ async function atualizar(silencioso) {
   atualizando = true; redesenharSituacao();
   try {
     const r = await N.lerNovidades(chave, D.transporte, estado);
+    reconciliarPendentes();
+    const enviadas = await enviarPendentes();
     estado.ultima = new Date().toISOString();
     await A.gravarEstado(chave, estado);
     situacaoSinc = { erro: null };
-    if (r.recebidas) { G = N.montarGavetas(estado); const u = G.raq_usuarios.find((x) => x.id === usuario.id); if (u) usuario = u; if (!document.querySelector('.veu')) desenhar(); }
-    if (!silencioso) avisar(r.recebidas ? 'Dados atualizados.' : 'Tudo em dia.');
+    if (r.recebidas) { G = N.montarGavetas(estado); const u = G.raq_usuarios.find((x) => x.id === usuario.id); if (u) usuario = u; if (!document.querySelector('.veu') && !formularioAlterado) desenhar(); }
+    if (!silencioso) avisar(r.recebidas ? 'Dados atualizados.' : enviadas ? 'Alterações enviadas ao notebook.' : 'Tudo em dia.');
   } catch (e) {
     situacaoSinc = { erro: e.code || 'ERRO', mensagem: e.message };
     if (!silencioso) avisar(e.code === 'SEM_INTERNET' ? 'Sem internet. Tente mais tarde.' : e.message);
@@ -494,15 +507,68 @@ async function atualizar(silencioso) {
 async function atualizarComGoogle() {
   try { await D.entrar(); await atualizar(false); } catch (e) { if (e.message !== 'CANCELADO') avisar(e.message); }
 }
+// ====================== gravar no celular e enviar ao notebook ======================
+// Toda alteração feita aqui: (1) vale na hora no celular; (2) fica guardada (criptografada) como "pendente";
+// (3) vai para o Google Drive num lote — na hora, se houver internet, ou na próxima atualização.
+let formularioAlterado = false;
+async function salvarRegistro(k, valorNovo) {
+  const em = new Date().toISOString();
+  const v = { ...valorNovo, [N.CAMPO_CARIMBO]: em };
+  const atual = estado.registros.get(k);
+  const pend = estado.pendentes.get(k);
+  estado.pendentes.set(k, { v, em, base: pend ? pend.base : (atual && atual.v) || null });
+  estado.registros.set(k, { v, em });
+  G = N.montarGavetas(estado);
+  await A.gravarEstado(chave, estado);
+  enviarPendentes().then((n) => { if (n) A.gravarEstado(chave, estado); redesenharSituacao(); }).catch(() => redesenharSituacao());
+  return v;
+}
+// chegou de outro aparelho uma versão mais nova de um registro que o celular também mudou: junta campo a campo
+function reconciliarPendentes() {
+  for (const [k, p] of estado.pendentes) {
+    const r = estado.registros.get(k);
+    if (!r || r.em === p.em) continue;
+    const em = new Date().toISOString();
+    const v = { ...N.juntarComRemoto(p.v, p.base, r.v), [N.CAMPO_CARIMBO]: em };
+    estado.pendentes.set(k, { v, em, base: r.v });
+    estado.registros.set(k, { v, em });
+  }
+  G = N.montarGavetas(estado);
+}
+let enviando = null;
+async function enviarPendentes() {
+  if (!estado.pendentes.size || !D.temPasse()) return 0;
+  if (enviando) return enviando;
+  enviando = (async () => {
+    const lista = [...estado.pendentes].map(([k, p]) => ({ k, v: p.v, em: p.em }));
+    const nome = await N.enviarLote(chave, D.transporte, estado.aparelho, lista);
+    estado.aplicados.add(nome);
+    for (const m of lista) { const p = estado.pendentes.get(m.k); if (p && p.em === m.em) estado.pendentes.delete(m.k); }
+    return lista.length;
+  })();
+  try { return await enviando; } finally { enviando = null; }
+}
+// pergunta simples na folha de baixo: devolve true (sim) ou false (não)
+function perguntar(texto, sim, nao) {
+  return new Promise((ok) => {
+    const v = document.createElement('div'); v.className = 'veu';
+    v.innerHTML = `<div class="folha"><p style="margin:0 0 16px;font-size:16px;white-space:pre-line;color:var(--texto)">${esc(texto)}</p>
+      <button class="btn" data-r="1">${esc(sim)}</button><button class="btn claro" style="margin-top:10px" data-r="0">${esc(nao)}</button></div>`;
+    v.addEventListener('click', (e) => { const b = e.target.closest('button[data-r]'); if (b) { v.remove(); ok(b.dataset.r === '1'); } });
+    document.body.appendChild(v);
+  });
+}
+
 function textoSituacao() {
   if (atualizando) return 'Atualizando...';
+  if (estado.pendentes && estado.pendentes.size) return `${estado.pendentes.size} ${estado.pendentes.size === 1 ? 'alteração aguardando' : 'alterações aguardando'} envio ao notebook. Toque para enviar.`;
   if (situacaoSinc.erro === 'SEM_PASSE') return 'Toque para atualizar com o Google.';
   if (situacaoSinc.erro === 'SEM_INTERNET') return 'Sem internet. Mostrando os dados de ' + quandoCurto(estado.ultima) + '.';
   if (situacaoSinc.erro) return 'Não foi possível atualizar. Toque para tentar de novo.';
   return 'Tudo em dia com o notebook (' + quandoCurto(estado.ultima) + ').';
 }
 function redesenharSituacao() { const el = document.getElementById('situacao-sinc'); if (el) el.querySelector('span').textContent = textoSituacao(); }
-function tocarSituacao() { if (situacaoSinc.erro === 'SEM_PASSE') atualizarComGoogle(); else atualizar(false); }
+function tocarSituacao() { if (!D.temPasse() || situacaoSinc.erro === 'SEM_PASSE') atualizarComGoogle(); else atualizar(false); }
 
 // ====================== hoje ======================
 TELAS.hoje = () => {
@@ -544,6 +610,7 @@ TELAS.pacientes = () => {
   app.innerHTML = `${topo('Pacientes')}
     <div class="conteudo">
       <label class="campo" style="font-size:14px">Busca geral<input type="search" id="busca-pac" placeholder="Nome, CPF, celular, queixa..." value="${esc(filtroPac.busca)}" oninput="filtroPac.busca=this.value; listarPacientes()"></label>
+      <button class="btn" onclick="ir('dados', null)">${ICONE.mais}Cadastrar paciente</button>
       <div class="seg"><button class="${filtroPac.sit === 'ativo' ? 'ativo' : ''}" onclick="filtroPac.sit='ativo'; desenhar()">Ativos</button><button class="${filtroPac.sit === 'alta' ? 'ativo' : ''}" onclick="filtroPac.sit='alta'; desenhar()">Com alta</button></div>
       <div class="cab-lista"><b id="titulo-lista"></b><button class="ordem" onclick="filtroPac.ordem = filtroPac.ordem==='nome' ? 'ultima' : 'nome'; listarPacientes()" id="btn-ordem"></button></div>
       <div id="lista-pac" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -614,19 +681,108 @@ TELAS.ficha = (id) => {
       </div>
     </div>`;
 };
-TELAS.dados = (id) => {
-  const p = pacientes().find((x) => x.id === id) || {};
-  const linhas = (campos) => campos.map(([r, v]) => `<div class="l"><span>${esc(r)}</span><span>${esc(v || '—')}</span></div>`).join('');
-  app.innerHTML = `${topo('Dados cadastrais')}
-    <div class="conteudo">
-      <p class="grupo">Identificação</p>
-      <div class="cartao dados">${linhas([['Data do cadastro', dataBR(p.dataCadastro)], ['Nome completo', p.nome], ['Data de nascimento', dataBR(p.nascimento)], ['Idade', idade(p.nascimento)], ['Sexo', p.sexo], ['Naturalidade', p.naturalidade], ['Estado civil', p.estadoCivil], ['Escolaridade', p.escolaridade], ['Profissão', p.profissao], ['Identidade', p.identidade], ['CPF', p.cpf]])}</div>
-      <p class="grupo">Contato</p>
-      <div class="cartao dados">${linhas([['E-mail', p.email], ['Telefone', p.telefone], ['Celular', p.celular]])}</div>
-      <p class="grupo">Endereço</p>
-      <div class="cartao dados">${linhas([['CEP', p.cep], ['Logradouro', p.logradouro], ['Bairro', p.bairro], ['Cidade', p.cidade], ['Estado', p.estado]])}</div>
-    </div>`;
+// ---------- Dados cadastrais (editar e cadastrar) — campos, opções e máscaras iguais ao notebook (salvarPaciente) ----------
+const OP_SEXO = ['Masculino', 'Feminino'];
+const OP_ESTADO_CIVIL = ['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)'];
+const OP_ESCOLARIDADE = ['Analfabeto(a)', 'Ensino fundamental incompleto', 'Ensino fundamental completo', 'Ensino médio incompleto', 'Ensino médio completo',
+  'Superior incompleto', 'Superior completo', 'Pós-graduação', 'Mestrado', 'Doutorado'];
+const MASCARAS = {
+  cpf: (v) => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'),
+  telefone: (v) => v.replace(/\D/g, '').slice(0, 10).replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2'),
+  celular: (v) => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2'),
+  cep: (v) => v.replace(/\D/g, '').slice(0, 8).replace(/(\d{5})(\d)/, '$1-$2'),
 };
+const PRINCIPAIS = ['nome', 'nascimento', 'sexo', 'identidade', 'cpf', 'celular'];
+function campoForm(rotulo, nome, valor, tipo = 'text', extra = '') {
+  const marca = PRINCIPAIS.includes(nome) ? ' <span class="principal" aria-label="principal">•</span>' : '';
+  return `<label class="campo campo-form">${esc(rotulo)}${marca}<input type="${tipo}" name="${nome}" value="${esc(valor || '')}" ${extra}></label>`;
+}
+function selectForm(rotulo, nome, valor, opcoes) {
+  const marca = PRINCIPAIS.includes(nome) ? ' <span class="principal" aria-label="principal">•</span>' : '';
+  return `<label class="campo campo-form">${esc(rotulo)}${marca}<select name="${nome}"><option value="">Selecione</option>${opcoes.map((o) => `<option ${o === valor ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
+}
+TELAS.dados = (id) => {
+  const novo = !id;
+  const p = novo ? { dataCadastro: hojeISO() } : (pacientes().find((x) => x.id === id) || {});
+  formularioAlterado = false;
+  app.innerHTML = `${topo(novo ? 'Cadastrar paciente' : 'Dados cadastrais')}
+    <form class="conteudo" id="form-paciente" onsubmit="event.preventDefault(); salvarPaciente(${novo ? 'null' : `'${esc(id)}'`})" oninput="formularioAlterado=true" onchange="formularioAlterado=true">
+      <p class="grupo">Identificação</p>
+      <div class="cartao form-cartao">
+        ${campoForm('Data do cadastro', 'dataCadastro', p.dataCadastro, 'date')}
+        ${campoForm('Nome completo', 'nome', p.nome, 'text', 'autocapitalize="words" autocomplete="off"')}
+        ${campoForm('Data de nascimento', 'nascimento', p.nascimento, 'date', 'oninput="document.getElementById(\'idade-form\').textContent = idade(this.value) || \'—\'"')}
+        <p class="idade-form">Idade: <b id="idade-form">${esc(idade(p.nascimento) || '—')}</b></p>
+        ${selectForm('Sexo', 'sexo', p.sexo, OP_SEXO)}
+        ${campoForm('Naturalidade', 'naturalidade', p.naturalidade)}
+        ${selectForm('Estado civil', 'estadoCivil', p.estadoCivil, OP_ESTADO_CIVIL)}
+        ${selectForm('Escolaridade', 'escolaridade', p.escolaridade, OP_ESCOLARIDADE)}
+        ${campoForm('Profissão', 'profissao', p.profissao)}
+        ${campoForm('Identidade', 'identidade', p.identidade)}
+        ${campoForm('CPF', 'cpf', p.cpf, 'text', 'inputmode="numeric" placeholder="000.000.000-00" maxlength="14" oninput="this.value=MASCARAS.cpf(this.value)"')}
+      </div>
+      <p class="grupo">Contato</p>
+      <div class="cartao form-cartao">
+        ${campoForm('E-mail', 'email', p.email, 'email', 'autocapitalize="none" autocomplete="off"')}
+        ${campoForm('Telefone', 'telefone', p.telefone, 'tel', 'placeholder="(00) 0000-0000" maxlength="14" oninput="this.value=MASCARAS.telefone(this.value)"')}
+        ${campoForm('Celular', 'celular', p.celular, 'tel', 'placeholder="(00) 00000-0000" maxlength="15" oninput="this.value=MASCARAS.celular(this.value)"')}
+      </div>
+      <p class="grupo">Endereço</p>
+      <div class="cartao form-cartao">
+        ${campoForm('CEP', 'cep', p.cep, 'text', 'inputmode="numeric" maxlength="9" oninput="this.value=MASCARAS.cep(this.value); buscarCep(this)"')}
+        ${campoForm('Logradouro', 'logradouro', p.logradouro)}
+        ${campoForm('Bairro', 'bairro', p.bairro)}
+        ${campoForm('Cidade', 'cidade', p.cidade)}
+        ${campoForm('Estado', 'estado', p.estado, 'text', 'maxlength="2" autocapitalize="characters" style="text-transform:uppercase"')}
+      </div>
+      <p class="legenda-principal"><span class="principal">•</span> Dados principais</p>
+      <button class="btn" type="submit" style="min-height:54px;font-size:17px">Salvar</button>
+    </form>`;
+};
+// CEP completo → preenche Logradouro, Bairro, Cidade e Estado vazios (ViaCEP, como no notebook; só o CEP sai do celular)
+let cepBuscado = '';
+function buscarCep(el) {
+  const cep = el.value.replace(/\D/g, '');
+  if (cep.length !== 8) { cepBuscado = ''; return; }
+  if (cep === cepBuscado) return;
+  cepBuscado = cep;
+  fetch('https://viacep.com.br/ws/' + cep + '/json/').then((r) => r.ok ? r.json() : null).then((d) => {
+    if (!d || d.erro || el.value.replace(/\D/g, '') !== cep) return;
+    const f = el.form; let preencheu = false;
+    for (const [nome, valor] of [['logradouro', d.logradouro], ['bairro', d.bairro], ['cidade', d.localidade], ['estado', d.uf]]) {
+      if (f[nome] && !f[nome].value.trim() && valor) { f[nome].value = nome === 'estado' ? String(valor).toUpperCase() : valor; preencheu = true; }
+    }
+    if (preencheu) { formularioAlterado = true; avisar('Endereço preenchido pelo CEP.'); }
+  }).catch(() => {});
+}
+async function salvarPaciente(id) {
+  const f = document.getElementById('form-paciente');
+  const val = (n) => String(f[n].value || '').trim();
+  const dados = {
+    id: id || ('p_' + Date.now()), dataCadastro: f.dataCadastro.value, nome: val('nome'), nascimento: f.nascimento.value, sexo: f.sexo.value,
+    naturalidade: val('naturalidade'), estadoCivil: f.estadoCivil.value, escolaridade: f.escolaridade.value, profissao: val('profissao'),
+    identidade: val('identidade'), cpf: val('cpf'), telefone: val('telefone'), celular: val('celular'), email: val('email'),
+    logradouro: val('logradouro'), bairro: val('bairro'), cidade: val('cidade'), estado: val('estado').toUpperCase(), cep: val('cep'),
+  };
+  if (!dados.nome) { avisar('Preencha o nome completo.'); f.nome.focus(); return; }
+  if (!dados.dataCadastro) { avisar('Preencha a data do cadastro.'); f.dataCadastro.focus(); return; }
+  // dados principais (mesma regra do notebook): avisa, mas deixa salvar
+  const faltam = [];
+  if (!dados.nascimento) faltam.push(['data de nascimento', 'nascimento']);
+  if (!dados.sexo) faltam.push(['sexo', 'sexo']);
+  if (!dados.identidade) faltam.push(['identidade', 'identidade']);
+  if (!dados.cpf) faltam.push(['CPF', 'cpf']);
+  if (!dados.telefone && !dados.celular) faltam.push(['telefone ou celular', 'celular']);
+  if (faltam.length && !(await perguntar('Faltam: ' + faltam.map((x) => x[0]).join(', ') + '. Deseja salvar assim mesmo?', 'Salvar assim mesmo', 'Preencher agora'))) {
+    f[faltam[0][1]].focus(); return;
+  }
+  const atual = id ? pacientes().find((x) => x.id === id) : null;
+  await salvarRegistro('raq_pacientes|' + dados.id, Object.assign({}, atual || {}, dados));   // mantém o que não está no formulário
+  formularioAlterado = false;
+  avisar('Paciente salvo com sucesso.');
+  if (id) { pilha.pop(); desenhar(); }
+  else { pilha.pop(); ir('ficha', dados.id); }
+}
 // ---------- Anamnese (consulta) — mesmos campos, ordem e rótulos do notebook (form-anamnese) ----------
 const vazio = (v) => v == null || String(v).trim() === '';
 const valor = (v) => vazio(v) ? '—' : String(v);
@@ -928,6 +1084,31 @@ TELAS.arquivos = (id) => {
         : '<p class="vazio">Nenhum arquivo enviado ainda.</p>'}
     </div>`;
 };
+// Aparência dos documentos avulsos (CSS + fundos, logo e assinatura): o notebook manda criptografado; o celular
+// guarda (também criptografado) e só baixa de novo quando o notebook mandar uma versão nova.
+let _recDocs = null;
+async function recursosDocumentos() {
+  if (_recDocs) return _recDocs;
+  let guardado = null;
+  try { const t = await A.lerTexto(chave, 'documentos'); if (t) guardado = JSON.parse(t); } catch (e) { guardado = null; }
+  try {
+    if (D.temPasse()) {
+      const r = await N.lerRecurso(chave, D.transporte, 'documentos', guardado && guardado.nome);
+      if (r && r.conteudo) { guardado = { nome: r.nome, rec: JSON.parse(r.conteudo) }; await A.gravarTexto(chave, 'documentos', JSON.stringify(guardado)); }
+    }
+  } catch (e) { /* sem internet: usa o que está guardado */ }
+  _recDocs = guardado ? guardado.rec : null;
+  return _recDocs;
+}
+// igual ao _montarDocumentoHtmlCompleto do notebook
+function montarDocumentoCompleto(compacto, titulo, rec, zoom) {
+  const corpo = String(compacto).replace(/\{\{B64:([A-Z_0-9]+)\}\}/g, (m, n) => (rec.imagens || {})[n] || '');
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(titulo)}</title><style>${rec.css || ''}
+html,body{margin:0; padding:0; background:#6f7f7b;}
+html{zoom:${zoom}}
+.folha-impressao{display:block !important; position:relative !important; left:auto !important; top:auto !important; margin:14px auto !important; box-shadow:0 2px 12px rgba(0,0,0,.35);}
+</style></head><body>${corpo}</body></html>`;
+}
 function dataUrlParaBlob(d) {
   const m = /^data:([^;,]*)(;base64)?,(.*)$/s.exec(d || ''); if (!m) return null;
   const bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
@@ -948,8 +1129,10 @@ async function abrirArquivo(pid, aid) {
   const nome = a.nome || a.nomeOriginal || 'Arquivo';
   if (tipo === 'imagem') { ampliar(`<img src="${esc(conteudo)}" alt="" style="width:100%;height:auto;display:block;border-radius:8px">`, nome); return; }
   if (tipo === 'documento') {
-    const zoom = Math.min(1, (window.innerWidth - 48) / 820).toFixed(3);
-    ampliar(`<iframe class="doc-avulso" sandbox="" srcdoc="${esc('<style>html{zoom:' + zoom + '}</style>' + conteudo)}"></iframe>`, nome); return;
+    const rec = await recursosDocumentos();
+    if (!rec) { avisar('A aparência dos documentos ainda não chegou do notebook. Abra o SGO_RA no notebook com internet e tente de novo.'); return; }
+    const zoom = Math.min(1, (window.innerWidth - 48) / 830).toFixed(3);
+    ampliar(`<iframe class="doc-avulso" sandbox="" srcdoc="${esc(montarDocumentoCompleto(conteudo, nome, rec, zoom))}"></iframe>`, nome); return;
   }
   // PDF, Word, Excel...: o próprio celular abre (menu de compartilhar → abrir no app certo)
   const blob = dataUrlParaBlob(conteudo); if (!blob) { avisar('Não foi possível abrir o arquivo.'); return; }
@@ -995,7 +1178,7 @@ TELAS.configuracoes = () => {
       <div class="cartao dados"><div class="l"><span>Última atualização</span><span>${esc(quandoCurto(estado.ultima))}</span></div></div>
       <button class="btn" onclick="atualizarComGoogle()">Atualizar agora</button>
       <p class="grupo">Sobre</p>
-      <div class="cartao dados"><div class="l"><span>Versão</span><span>celular 0.6 (consulta)</span></div></div>
+      <div class="cartao dados"><div class="l"><span>Versão</span><span>celular 0.7.1</span></div></div>
       <p style="font-size:12px;color:var(--texto-ter);margin:4px 2px">Usuários, backup, registro de atividades e licença ficam no notebook.</p>
       <button class="link" onclick="desligarCelular()">Tirar os dados deste celular</button>
     </div>`;

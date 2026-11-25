@@ -32,6 +32,14 @@
     const fluxo = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
     return new Uint8Array(await new Response(fluxo).arrayBuffer());
   }
+  async function gzip(bytes) {
+    const fluxo = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
+    return new Uint8Array(await new Response(fluxo).arrayBuffer());
+  }
+  function paraBase64(u) {
+    if (typeof btoa === 'function') { let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }
+    return Buffer.from(u).toString('base64');
+  }
 
   // ---------- scrypt (N=2^15, r=8, p=1), igual ao crypto.scryptSync do notebook ----------
   async function pbkdf2(senha, sal, bytes) {
@@ -104,7 +112,8 @@
 
   // ---------- leitura dos lotes ----------
   // estado = { aplicados: Set de nomes de lotes já lidos, registros: Map "gaveta|id" → { v (registro ou null), em } }
-  function novoEstado() { return { aplicados: new Set(), registros: new Map() }; }
+  // pendentes: Map "gaveta|id" → { v, em, base } — alterações feitas no celular que ainda não foram enviadas
+  function novoEstado() { return { aplicados: new Set(), registros: new Map(), pendentes: new Map(), aparelho: 'cel' + sorteio(4) }; }
 
   async function lerNovidades(chave, transporte, estado, aoProgresso) {
     const nomes = (await transporte.listar()).filter((n) => /^lote_.*\.sgsync$/.test(n) && !estado.aplicados.has(n)).sort();
@@ -139,11 +148,53 @@
     return g;
   }
 
+  // ---------- envio (o celular grava um lote no MESMO formato do notebook: gzip + AES-256-GCM, rótulo = nome) ----------
+  async function cifrarArquivo(chave, nome, bytes) {
+    const iv = (raiz.crypto || require('crypto').webcrypto).getRandomValues(new Uint8Array(12));
+    const saida = new Uint8Array(await sutil.encrypt({ name: 'AES-GCM', iv, additionalData: txt.encode(nome), tagLength: 128 }, chave, await gzip(bytes)));
+    const corpo = saida.subarray(0, saida.length - 16), tag = saida.subarray(saida.length - 16);
+    return txt.encode(JSON.stringify({ formato: FORMATO, iv: paraBase64(iv), tag: paraBase64(tag), dados: paraBase64(corpo) }));
+  }
+  const carimboLote = () => new Date().toISOString().replace(/[-:.]/g, '');
+  function sorteio(n) { const u = (raiz.crypto || require('crypto').webcrypto).getRandomValues(new Uint8Array(n)); return [...u].map((b) => b.toString(16).padStart(2, '0')).join(''); }
+  // mudancas = [{ k: 'gaveta|id', v: registro (ou null = excluído), em }]
+  async function enviarLote(chave, transporte, aparelho, mudancas) {
+    const nome = `lote_${carimboLote()}_${aparelho}_${sorteio(3)}.sgsync`;
+    const corpo = txt.encode(JSON.stringify({ aparelho, nomeAparelho: 'celular', criadoEm: new Date().toISOString(), mudancas }));
+    await transporte.gravar(nome, await cifrarArquivo(chave, nome, corpo));
+    return nome;
+  }
+
+  // Junta uma alteração deste celular (ainda não enviada) com uma versão mais nova que chegou de outro aparelho:
+  // os campos que o celular mudou ficam com o valor do celular; os outros ficam com o que chegou.
+  const estavel = (v) => v === undefined ? 'u' : (v === null || typeof v !== 'object') ? JSON.stringify(v)
+    : Array.isArray(v) ? '[' + v.map(estavel).join(',') + ']' : '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + estavel(v[k])).join(',') + '}';
+  function juntarComRemoto(meu, base, remoto) {
+    if (!remoto) return meu;
+    const r = { ...remoto };
+    const chaves = new Set([...Object.keys(meu || {}), ...Object.keys(base || {})]);
+    for (const k of chaves) {
+      if (k === CAMPO_CARIMBO) continue;
+      if (estavel((meu || {})[k]) !== estavel((base || {})[k])) { if ((meu || {})[k] === undefined) delete r[k]; else r[k] = meu[k]; }
+    }
+    return r;
+  }
+
   // conteúdo de um arquivo anexado (foto, PDF...) — baixado só quando a pessoa abre
   async function lerAnexo(chave, transporte, id, campo) {
     const nome = `anexo_${id}_${campo}.sgsync`;
     const arq = await transporte.ler(nome);
     return arq ? dtxt.decode(await decifrarArquivo(chave, nome, arq)) : null;
+  }
+
+  // peça fixa enviada pelo notebook (ex.: 'documentos' = aparência dos documentos avulsos); pega a versão mais nova
+  async function lerRecurso(chave, transporte, nomeRecurso, jaTenho) {
+    const nomes = (await transporte.listar()).filter((n) => n.startsWith(`recurso_${nomeRecurso}_`) && n.endsWith('.sgsync')).sort();
+    const nome = nomes[nomes.length - 1];
+    if (!nome) return null;
+    if (jaTenho && jaTenho === nome) return { nome, conteudo: null };   // já está guardado no aparelho
+    const arq = await transporte.ler(nome);
+    return arq ? { nome, conteudo: dtxt.decode(await decifrarArquivo(chave, nome, arq)) } : null;
   }
 
   // senha: o mesmo PBKDF2 do notebook (210 mil voltas + sal) — confere sem precisar de internet
@@ -155,6 +206,7 @@
     return hex === usuario.senhaHash;
   }
 
-  const api = { ARQ_CABECALHO, GAVETAS, CAMPO_CARIMBO, codigoValido, normalizarCodigo, scrypt, abrirCadeado, novoEstado, lerNovidades, montarGavetas, lerAnexo, conferirSenha };
+  const api = { ARQ_CABECALHO, GAVETAS, CAMPO_CARIMBO, codigoValido, normalizarCodigo, scrypt, abrirCadeado, novoEstado, lerNovidades, montarGavetas, lerAnexo, lerRecurso, conferirSenha,
+    enviarLote, juntarComRemoto, sorteio };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else raiz.SgoNucleo = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
