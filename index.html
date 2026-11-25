@@ -123,6 +123,45 @@
   .veu{position:fixed; inset:0; background:rgba(11,55,51,.45); z-index:20; display:flex; align-items:flex-end;}
   .folha{background:#fff; width:100%; max-height:88vh; overflow:auto; border-radius:16px 16px 0 0; padding:16px 16px calc(env(safe-area-inset-bottom) + 18px);}
   .folha h2{margin:0 0 10px; font-size:18px; color:var(--verde-escuro);}
+  .bloco-abrir summary{list-style:none; display:flex; flex-direction:column; gap:3px; padding:13px 40px 13px 14px; position:relative; cursor:pointer;}
+  .bloco-abrir summary::-webkit-details-marker{display:none;}
+  .bloco-abrir summary::after{content:''; position:absolute; right:16px; top:50%; width:9px; height:9px; border-right:2px solid var(--verde-medio); border-bottom:2px solid var(--verde-medio); transform:translateY(-70%) rotate(45deg); transition:transform .15s;}
+  .bloco-abrir[open] summary::after{transform:translateY(-30%) rotate(-135deg);}
+  .bloco-abrir .ba-t{font-size:16px; font-weight:700; color:var(--verde-escuro);}
+  .bloco-abrir .ba-r{font-size:13px; color:var(--texto-sec); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .bloco-abrir[open] .ba-r{display:none;}
+  .bloco-abrir .dados{border-top:1px solid var(--borda);}
+  .obs{font-size:13px; font-style:italic; color:var(--texto-ter); font-weight:400 !important;}
+  .rot-tab{margin:12px 14px 6px; font-size:14px; font-weight:700; color:var(--verde-medio);}
+  .tab-neural{width:calc(100% - 28px); margin:0 14px 12px; border-collapse:collapse; font-size:14px; table-layout:fixed;}
+  .tab-neural th, .tab-neural td{border:1px solid var(--borda); text-align:center; height:36px; padding:0 2px;}
+  .tab-neural th{background:var(--menta-claro); color:var(--verde-escuro); font-weight:700;}
+  .tab-neural th:first-child{background:none; border:0; width:34%;}
+  .tab-neural td.rot{text-align:left; padding-left:8px; color:var(--texto-sec); font-size:13px;}
+  .cadeia-figs{display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:12px 14px 4px;}
+  .fig{display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:0; padding:0; font:inherit; color:var(--verde-escuro); font-size:13px; font-weight:700;}
+  .fig svg{width:100%; height:auto; display:block;}
+  .fig.desenho{grid-column:1 / -1;}
+  .img-desenho{width:100%; max-width:320px; aspect-ratio:1; background:#fff; border:1px solid var(--borda); border-radius:10px; display:block; margin:0 auto;}
+  .sem-desenho{display:block; padding:18px; color:var(--texto-ter); font-weight:400; font-size:13px;}
+  .dica-ampliar{margin:0 14px 6px; font-size:12px; color:var(--texto-ter); text-align:center;}
+  .veu-cheio{align-items:stretch;}
+  .folha-cheia{max-height:100vh; height:100%; border-radius:0; padding-top:calc(env(safe-area-inset-top) + 14px);}
+  .ampliado svg, .ampliado .img-desenho{width:100%; max-width:none; height:auto;}
+  .campo-filtro{font-size:14px;}
+  .campo-filtro input, .campo-filtro select{height:46px; font-size:16px;}
+  .dia-ag{padding:10px 14px; font-size:15px; font-weight:700; color:var(--verde-escuro); background:var(--menta-claro); border-radius:10px 10px 0 0; border-bottom:1px solid var(--borda);}
+  .dia-ag span{font-weight:400; color:var(--texto-sec); font-size:13px;}
+  .linha-ag .det{display:block; font-size:12px; color:var(--texto-sec);}
+  .linha-ag .data-ag{width:88px; font-size:15px; font-weight:700; color:var(--verde-medio); display:flex; flex-direction:column;}
+  .linha-ag .data-ag small{font-weight:400; color:var(--texto-sec); font-size:12px;}
+  .avulso{font-size:12px; color:#8a5a00;}
+  #lista-fin .item-pac, .cartao > .item-pac{border-bottom:1px solid var(--borda);}
+  #lista-fin .item-pac:last-child, .cartao > .item-pac:last-child{border-bottom:0;}
+  .doc-avulso{width:100%; height:75vh; border:1px solid var(--borda); border-radius:8px; background:#fff;}
+  .totais{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px;}
+  .totais div{background:#fff; border-radius:10px; box-shadow:var(--sombra); padding:10px 12px; font-size:13px; color:var(--texto-sec);}
+  .totais b{display:block; font-size:17px; color:var(--verde-escuro);}
   .seg-bio{min-width:104px; min-height:38px; border-radius:999px; border:1px solid var(--borda); background:#eef2f1; color:var(--texto-sec); font-size:14px; font-weight:700; flex:none;}
   .seg-bio.ligado{background:var(--verde-claro); border-color:var(--verde-claro); color:#fff;}
   .aviso-flutuante{position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 24px); transform:translateX(-50%); background:var(--verde-escuro); color:#fff; padding:10px 16px; border-radius:10px; font-size:14px; z-index:30; max-width:90vw; text-align:center;}
@@ -190,7 +229,40 @@ const nomeExibicao = (u) => (u && (u.nomeExibicao || primeiroNome(u.nome))) || '
 function nomePaciente(id) { const p = pacientes().find((x) => x.id === id); return p ? p.nome : '(paciente removido)'; }
 function ultimasConsultas() { const m = {}; for (const c of G.raq_consultas) if (c.pacienteId && c.data && (!m[c.pacienteId] || c.data > m[c.pacienteId])) m[c.pacienteId] = c.data; return m; }
 const CORES_STATUS = { 'Confirmada': ['#1d5a8a', '#e3f0fb'], 'Concluída': ['#1d7a6d', '#e3f2ef'], 'Cancelada': ['#a33025', '#fdf1f0'] };
-function etiquetaStatus(s) { const c = CORES_STATUS[s] || ['#5c7570', '#eef2f1']; const t = s === 'Aguardando confirmação' ? 'Aguardando' : (s || ''); return t ? `<span class="etiqueta" style="color:${c[0]};background:${c[1]}">${esc(t)}</span>` : ''; }
+// no notebook, "Aguardando confirmação" é guardado como status vazio
+function etiquetaStatus(s) { const c = CORES_STATUS[s] || ['#5c7570', '#eef2f1']; const t = (!s || s === 'Aguardando confirmação') ? 'Aguardando' : s; return `<span class="etiqueta" style="color:${c[0]};background:${c[1]}">${esc(t)}</span>`; }
+// financeiro (mesmas regras do notebook: _situacaoPagamento, parseValorReal, formatarReal)
+const situacaoPag = (f) => f.pagamento === 'Sim' ? 'pago' : (f.pagamento === 'Abonado' ? 'abonado' : 'pendente');
+function etiquetaPag(f) {
+  const s = situacaoPag(f);
+  if (s === 'pago') return '<span class="etiqueta" style="background:#e3f5ef;color:#1d7a6d">Pago</span>';
+  if (s === 'abonado') return '<span class="etiqueta" style="background:#eceef8;color:#4a4f9a">Abonado</span>';
+  return '<span class="etiqueta" style="background:#fdeceb;color:#c0392b">Pendente</span>';
+}
+function valorReal(t) { if (!t) return 0; const n = parseFloat(String(t).replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3})/g, '').replace(',', '.')); return isNaN(n) ? 0 : n; }
+const real = (n) => 'R$ ' + n.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+,)/g, '$1.');
+// período (mesmo do notebook: semana de domingo a sábado)
+function intervaloPeriodo(periodo, ini, fim) {
+  const h = new Date(); h.setHours(0, 0, 0, 0); const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  if (periodo === 'hoje') return [iso(h), iso(h)];
+  if (periodo === 'semana') { const i = new Date(h); i.setDate(i.getDate() - i.getDay()); const f = new Date(i); f.setDate(f.getDate() + 6); return [iso(i), iso(f)]; }
+  if (periodo === 'mes') return [iso(new Date(h.getFullYear(), h.getMonth(), 1)), iso(new Date(h.getFullYear(), h.getMonth() + 1, 0))];
+  if (periodo === 'ano') return [`${h.getFullYear()}-01-01`, `${h.getFullYear()}-12-31`];
+  return [ini || '', fim || ''];
+}
+const noPeriodo = (data, [i, f]) => !(i && String(data || '') < i) && !(f && String(data || '') > f);
+const OPCOES_PERIODO = [['hoje', 'Hoje'], ['semana', 'Esta semana'], ['mes', 'Este mês'], ['ano', 'Este ano'], ['personalizado', 'Selecione o período']];
+function campoSelect(rotulo, id, opcoes, atual, aoMudar) {
+  return `<label class="campo campo-filtro">${esc(rotulo)}<select id="${id}" onchange="${aoMudar}">${opcoes.map(([v, t]) => `<option value="${esc(v)}" ${v === atual ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
+}
+function camposPeriodo(f, aoMudar) {
+  return `${campoSelect('Período', 'f-periodo', OPCOES_PERIODO, f.periodo, `${aoMudar}`)}
+    ${f.periodo === 'personalizado' ? `<div class="dupla"><label class="campo campo-filtro">Data inicial<input type="date" id="f-ini" value="${esc(f.ini)}" onchange="${aoMudar}"></label>
+      <label class="campo campo-filtro">Data final<input type="date" id="f-fim" value="${esc(f.fim)}" onchange="${aoMudar}"></label></div>` : ''}`;
+}
+const nomeDoRegistro = (x) => x.pacienteId ? nomePaciente(x.pacienteId) : (x.pacienteNomeAvulso || '—');
+const marcaAvulso = (x) => x.pacienteId ? '' : ` <span class="avulso">${x.pacienteExcluido ? '(cadastro excluído)' : '(não cadastrado)'}</span>`;
+function semanaCurta(iso) { const d = new Date(iso + 'T00:00:00'); return isNaN(d) ? '' : DIAS[d.getDay()]; }
 
 // ====================== utilidades de tela ======================
 function avisar(texto) {
@@ -457,8 +529,8 @@ TELAS.hoje = () => {
       </div>
       <div class="botoes-menu">
         <button class="bt" onclick="ir('pacientes')">${ICONE.pacientes}Pacientes</button>
-        <button class="bt" onclick="ir('embreve','Agenda')">${ICONE.agenda.replace(/20/g, '24')}Agenda</button>
-        <button class="bt" onclick="ir('embreve','Financeiro')">${ICONE.financeiro}Financeiro</button>
+        <button class="bt" onclick="ir('agenda')">${ICONE.agenda.replace(/20/g, '24')}Agenda</button>
+        <button class="bt" onclick="ir('financeiro')">${ICONE.financeiro}Financeiro</button>
         <button class="bt" onclick="ir('configuracoes')">${ICONE.config}Configurações</button>
         <button class="bt sair" onclick="sair()">${ICONE.sair}Sair</button>
       </div>
@@ -531,12 +603,12 @@ TELAS.ficha = (id) => {
         ${fs.map((f) => { const qq = anamneseDaFase(id, f).queixaPrincipal || ''; return `<option value="${f}" ${f === n ? 'selected' : ''}>Fase ${f}${f === faseAtual(p) ? ' (atual)' : ''}${qq ? ' — ' + esc(qq.length > 28 ? qq.slice(0, 28) + '…' : qq) : ''}</option>`; }).join('')}</select></label>` : ''}
       <div class="submenus">
         <button class="sm largo" onclick="ir('dados','${esc(id)}')">Dados cadastrais</button>
-        <button class="sm breve" onclick="ir('embreve','Anamnese')">Anamnese</button>
-        <button class="sm breve" onclick="ir('embreve','Exame físico')">Exame físico</button>
+        <button class="sm" onclick="ir('anamnese','${esc(id)}')">Anamnese</button>
+        <button class="sm" onclick="ir('exame','${esc(id)}')">Exame físico</button>
         <button class="sm" onclick="ir('consultas','${esc(id)}')">Consultas</button>
-        <button class="sm breve" onclick="ir('embreve','Financeiro')">Financeiro</button>
-        <button class="sm breve" onclick="ir('embreve','Agenda')">Agenda</button>
-        <button class="sm breve" onclick="ir('embreve','Arquivos anexados')">Arquivos anexados</button>
+        <button class="sm" onclick="ir('financeiroFicha','${esc(id)}')">Financeiro</button>
+        <button class="sm" onclick="ir('agendaFicha','${esc(id)}')">Agenda</button>
+        <button class="sm" onclick="ir('arquivos','${esc(id)}')">Arquivos anexados</button>
         <button class="sm breve" onclick="ir('embreve','Documentos avulsos')">Documentos avulsos</button>
         <button class="sm breve" onclick="ir('embreve','Exportar ficha')">Exportar ficha</button>
       </div>
@@ -555,6 +627,341 @@ TELAS.dados = (id) => {
       <div class="cartao dados">${linhas([['CEP', p.cep], ['Logradouro', p.logradouro], ['Bairro', p.bairro], ['Cidade', p.cidade], ['Estado', p.estado]])}</div>
     </div>`;
 };
+// ---------- Anamnese (consulta) — mesmos campos, ordem e rótulos do notebook (form-anamnese) ----------
+const vazio = (v) => v == null || String(v).trim() === '';
+const valor = (v) => vazio(v) ? '—' : String(v);
+// texto longo (queixas, história): bloco de tocar para abrir; o resumo é o começo do texto numa linha
+function blocoTexto(rotulo, v) {
+  const resumo = vazio(v) ? 'Não preenchido' : String(v).replace(/\s+/g, ' ').trim();
+  return blocoAbrir(rotulo, resumo, `<div class="l"><span style="white-space:pre-wrap;color:var(--texto);font-weight:400">${esc(valor(v))}</span></div>`);
+}
+function linhasDados(pares) { return pares.map(([r, v]) => `<div class="l"><span>${esc(r)}</span><span>${esc(valor(v))}</span></div>`).join(''); }
+function blocoAbrir(titulo, resumo, conteudo) {
+  return `<details class="cartao bloco-abrir"><summary><span class="ba-t">${esc(titulo)}</span><span class="ba-r">${esc(resumo)}</span></summary>
+    <div class="dados">${conteudo}</div></details>`;
+}
+const simCom = (sim, extra) => sim === 'Sim' ? (extra ? `Sim (${extra})` : 'Sim') : 'Não';
+TELAS.anamnese = (id) => {
+  const p = pacientes().find((x) => x.id === id) || {};
+  const n = faseFicha[id] || faseAtual(p);
+  const a = anamneseDaFase(id, n);
+  const preenchida = Object.keys(a).some((k) => k !== 'atualizadoEm' && !vazio(a[k]) && !['Não'].includes(a[k]));
+  const alim = [['Café da manhã', a.alimCafe], ['Almoço', a.alimAlmoco], ['Jantar', a.alimJantar], ['Lanches', a.alimLanches]];
+  const habitos = [
+    ['Bebida alcoólica', a.alcool || 'Não'], ...(a.alcool === 'Sim' ? [['Frequência', a.alcoolFrequencia]] : []),
+    ['Fumo', a.fumo || 'Não'], ...(a.fumo === 'Sim' ? [['Frequência', a.fumoFrequencia]] : []),
+    ['Atividade física', a.atividade || 'Não'], ...(a.atividade === 'Sim' ? [['Qual(is)', a.atividadeQual], ['Quantas vezes por semana', a.atividadeVezes]] : [])];
+  const disturbios = [
+    ['Distúrbios viscerais', a.circulatorios || 'Não'], ...(a.circulatorios === 'Sim' ? [['Qual(is)', a.circulatoriosQual]] : []),
+    ['Distúrbios cranianos', a.cranianos || 'Não'], ...(a.cranianos === 'Sim' ? [['Qual(is)', a.cranianosQual]] : []),
+    ['Distúrbios emocionais', a.emocionais || 'Não'], ...(a.emocionais === 'Sim' ? [['Qual(is)', a.emocionaisQual]] : [])];
+  const mulher = [['Menarca', a.menarca], ['Menopausa', a.menopausa], ['Menstruação', a.menstruacao], ['Número de gestações', a.gestacoes], ['Número de filhos', a.filhos], ['Número de abortos', a.abortos]];
+  const resumoLista = (pares) => { const f = pares.filter(([, v]) => !vazio(v)).map(([r]) => r); return f.length ? f.join(' · ') : 'Não preenchido'; };
+  app.innerHTML = `${topo('Anamnese' + (fases(p).length > 1 ? ' — Fase ' + n : ''))}
+    <div class="faixa-pac"><p><b>${esc(p.nome || '')}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}</p></div>
+    <div class="conteudo">
+      ${preenchida ? '' : '<p class="aviso">Anamnese ainda não preenchida.</p>'}
+      ${blocoTexto('Queixa principal', a.queixaPrincipal)}
+      ${blocoTexto('Queixa secundária', a.queixaSecundaria)}
+      ${blocoTexto('História clínica e antecedentes', a.historiaClinica)}
+      ${blocoAbrir('Hábitos', `Bebida: ${simCom(a.alcool, a.alcoolFrequencia)} · Fumo: ${simCom(a.fumo, a.fumoFrequencia)} · Atividade física: ${simCom(a.atividade, a.atividadeQual)}`, linhasDados(habitos))}
+      ${blocoAbrir('Tipo de alimentação', resumoLista(alim), linhasDados(alim))}
+      ${blocoAbrir('Distúrbios', `Viscerais: ${a.circulatorios || 'Não'} · Cranianos: ${a.cranianos || 'Não'} · Emocionais: ${a.emocionais || 'Não'}`, linhasDados(disturbios))}
+      ${p.sexo === 'Feminino' ? blocoAbrir('Saúde da mulher', resumoLista(mulher), linhasDados(mulher)) : ''}
+      ${blocoAbrir('Medicamentos', vazio(a.medicamentos) ? 'Não preenchido' : a.medicamentos, `<div class="l"><span style="white-space:pre-wrap;color:var(--texto);font-weight:400">${esc(valor(a.medicamentos))}</span></div>`)}
+    </div>`;
+};
+
+// ---------- Exame físico (consulta) — mesmos campos, ordem e rótulos do notebook (form-exame) ----------
+const LINHAS_SLUMP = [['ciatico', 'Ciático'], ['crural', 'Crural'], ['obturador', 'Obturador']];
+const LINHAS_PLEXO = [['mediano', 'Mediano'], ['ulnar', 'Ulnar'], ['axilar', 'Axilar'], ['radial', 'Radial'], ['musculocutaneo', 'Musculocutâneo']];
+let ladoNeural = 'd';
+function tabelaNeural(prefixo, linhas, valores) {
+  const v = valores || {};
+  return `<table class="tab-neural"><thead><tr><th></th>${[1, 2, 3, 4, 5].map((i) => `<th>${i}</th>`).join('')}</tr></thead><tbody>
+    ${linhas.map(([ch, rot]) => `<tr><td class="rot">${esc(rot)}</td>${[1, 2, 3, 4, 5].map((i) => `<td>${esc(v[`${prefixo}-${ladoNeural}-${ch}-${i}`] || '')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+const contarValores = (o) => Object.values(o || {}).filter((x) => !vazio(x)).length;
+// Figura da cadeia lesional com as marcações. Igual ao notebook: caixa 480×1142 (a imagem estica na caixa),
+// coordenadas em % da caixa, raio do círculo em % da largura.
+const CAIXA_W = 480, CAIXA_H = 1142;
+function figuraCadeia(lado, marcas) {
+  const X = (p) => p * CAIXA_W / 100, Y = (p) => p * CAIXA_H / 100;
+  const seta = (x1, y1, x2, y2) => {
+    const esp = 5, ang = Math.atan2(y2 - y1, x2 - x1), cab = esp * 4.2;
+    const p1 = [x2 - cab * Math.cos(ang - 0.45), y2 - cab * Math.sin(ang - 0.45)], p2 = [x2 - cab * Math.cos(ang + 0.45), y2 - cab * Math.sin(ang + 0.45)];
+    const bx = x2 - cab * 0.8 * Math.cos(ang), by = y2 - cab * 0.8 * Math.sin(ang);
+    return `<line x1="${x1}" y1="${y1}" x2="${bx}" y2="${by}" stroke="#c0392b" stroke-width="${esp}" stroke-linecap="round"/><polygon points="${x2},${y2} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}" fill="#c0392b"/>`;
+  };
+  const desenho = (marcas || []).map((m) => {
+    const tipo = m.tipo || 'ponto';
+    if (tipo === 'ponto') return `<circle cx="${X(m.x)}" cy="${Y(m.y)}" r="11" fill="#c0392b" stroke="#fff" stroke-width="3"/>`;
+    if (tipo === 'circulo') return `<circle cx="${X(m.x)}" cy="${Y(m.y)}" r="${X(m.r)}" fill="none" stroke="#c0392b" stroke-width="5"/>`;
+    return seta(X(m.x1), Y(m.y1), X(m.x2), Y(m.y2));
+  }).join('');
+  return `<svg class="fig-cadeia" viewBox="0 0 ${CAIXA_W} ${CAIXA_H}" role="img" aria-label="${lado === 'frente' ? 'Frente' : 'Costas'}">
+    <rect width="${CAIXA_W}" height="${CAIXA_H}" rx="20" fill="#cdeae3"/>
+    <image href="cadeia_${lado}.png" width="${CAIXA_W}" height="${CAIXA_H}" preserveAspectRatio="none"/>${desenho}</svg>`;
+}
+function ampliar(html, titulo) {
+  const v = document.createElement('div'); v.className = 'veu veu-cheio';
+  v.innerHTML = `<div class="folha folha-cheia"><h2>${esc(titulo)}</h2><div class="ampliado">${html}</div><button class="btn claro" style="margin-top:14px" onclick="this.closest('.veu').remove()">Fechar</button></div>`;
+  document.body.appendChild(v);
+}
+TELAS.exame = (id) => {
+  const p = pacientes().find((x) => x.id === id) || {};
+  const n = faseFicha[id] || faseAtual(p);
+  const e = G.raq_exame[chaveFase(id, n)] || {};
+  const mc = e.marcadoresCadeia || { frente: [], costas: [] };
+  const nMarc = (mc.frente || []).length + (mc.costas || []).length;
+  const preenchido = Object.keys(e).some((k) => k !== 'atualizadoEm' && k !== 'desenhoLivre' && (typeof e[k] === 'string' ? !vazio(e[k]) : k.startsWith('tabela') ? contarValores(e[k]) : nMarc));
+  const estatica = [['Vista anterior', e.vistaAnterior], ['Vista lateral', e.vistaLateral], ['Vista posterior', e.vistaPosterior]];
+  const resumoLista = (pares) => { const f = pares.filter(([, v]) => !vazio(v)).map(([r]) => r); return f.length ? f.join(' · ') : 'Não preenchido'; };
+  const qtdNeural = contarValores(e.tabelaSlump) + contarValores(e.tabelaPlexo);
+  const cadeiaResumo = [nMarc ? `${nMarc} ${nMarc === 1 ? 'marcação' : 'marcações'}` : 'Sem marcações', !vazio(e.cadeiaConclusao) ? 'Observações' : ''].filter(Boolean).join(' · ');
+  window._exameAberto = { e, mc };
+  app.innerHTML = `${topo('Exame físico' + (fases(p).length > 1 ? ' — Fase ' + n : ''))}
+    <div class="faixa-pac"><p><b>${esc(p.nome || '')}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}</p></div>
+    <div class="conteudo">
+      ${preenchido ? '' : '<p class="aviso">Exame físico ainda não preenchido.</p>'}
+      ${blocoAbrir('Inspeção estática', resumoLista(estatica), linhasDadosTexto(estatica))}
+      ${blocoAbrir('Inspeção dinâmica', vazio(e.inspecaoDinamica) ? 'Não preenchido' : e.inspecaoDinamica.replace(/\s+/g, ' '),
+        `${textoLivre(e.inspecaoDinamica)}<div class="l"><span class="obs">Obs.: definir padrões de dor no teste de mobilidade global.</span></div>`)}
+      ${blocoTexto('Palpação estática', e.palpacaoEstatica)}
+      ${blocoTexto('Palpação dinâmica e testes osteopáticos', e.palpacaoDinamica)}
+      ${blocoTexto('Testes ortopédicos', e.testesOrtopedicos)}
+      ${blocoTexto('Exames complementares', e.examesComplementares)}
+      <details class="cartao bloco-abrir" id="bloco-neural"><summary><span class="ba-t">Análise do sistema nervoso</span><span class="ba-r">${qtdNeural ? 'Slump e Plexo braquial preenchidos' : 'Não preenchido'}</span></summary>
+        <div class="dados" id="corpo-neural">${corpoNeural(e)}</div></details>
+      ${blocoTexto('Sistema estabilizador', e.sistemaEstabilizador)}
+      ${blocoTexto('Sistema visceral', e.sistemaVisceral)}
+      ${blocoTexto('Crânio', e.cranio)}
+      <details class="cartao bloco-abrir"><summary><span class="ba-t">Cadeia lesional</span><span class="ba-r">${esc(cadeiaResumo)}</span></summary>
+        <div class="dados"><div class="cadeia-figs">
+          <button class="fig" onclick="ampliar(figuraCadeia('frente', _exameAberto.mc.frente), 'Frente')"><span>Frente</span>${figuraCadeia('frente', mc.frente)}</button>
+          <button class="fig" onclick="ampliar(figuraCadeia('costas', _exameAberto.mc.costas), 'Costas')"><span>Costas</span>${figuraCadeia('costas', mc.costas)}</button>
+        </div>
+        <p class="dica-ampliar">Toque na figura para ampliar.</p>
+        <div class="cadeia-figs"><button class="fig desenho" onclick="ampliarDesenho()"><span>Desenho livre</span>
+          ${e.desenhoLivre ? `<img src="${esc(e.desenhoLivre)}" alt="" class="img-desenho">` : '<span class="sem-desenho">Sem desenho</span>'}</button></div>
+        <div class="l" style="flex-direction:column;gap:4px"><span>Observações</span><span style="white-space:pre-wrap;text-align:left;color:var(--texto);font-weight:400">${esc(valor(e.cadeiaConclusao))}</span></div>
+        </div></details>
+    </div>`;
+};
+function ampliarDesenho() { const d = _exameAberto.e.desenhoLivre; if (!d) return; ampliar(`<img src="${esc(d)}" alt="" class="img-desenho">`, 'Desenho livre'); }
+function textoLivre(v) { return `<div class="l"><span style="white-space:pre-wrap;color:var(--texto);font-weight:400">${esc(valor(v))}</span></div>`; }
+function linhasDadosTexto(pares) {
+  return pares.map(([r, v]) => `<div class="l" style="flex-direction:column;gap:4px"><span>${esc(r)}</span><span style="white-space:pre-wrap;text-align:left;color:var(--texto);font-weight:400">${esc(valor(v))}</span></div>`).join('');
+}
+function corpoNeural(e) {
+  return `<div class="l" style="justify-content:center"><div class="seg" style="flex:1">
+      <button class="${ladoNeural === 'd' ? 'ativo' : ''}" onclick="ladoNeural='d'; document.getElementById('corpo-neural').innerHTML = corpoNeural(_exameAberto.e)">Direito (D)</button>
+      <button class="${ladoNeural === 'e' ? 'ativo' : ''}" onclick="ladoNeural='e'; document.getElementById('corpo-neural').innerHTML = corpoNeural(_exameAberto.e)">Esquerdo (E)</button></div></div>
+    <p class="rot-tab">Slump</p>${tabelaNeural('slump', LINHAS_SLUMP, e.tabelaSlump)}
+    <p class="rot-tab">Plexo braquial</p>${tabelaNeural('plexo', LINHAS_PLEXO, e.tabelaPlexo)}`;
+}
+
+// ---------- Agenda geral (consulta) — filtros iguais ao notebook (renderizarListaAgendamentos) ----------
+let filtroAg = { busca: '', periodo: 'hoje', ini: '', fim: '', status: 'todos', desc: false };
+const OPCOES_STATUS = [['todos', 'Todos os status'], ['', 'Aguardando confirmação'], ['Confirmada', 'Confirmada'], ['Concluída', 'Concluída'], ['Cancelada', 'Cancelada']];
+let _esperaBusca = null;
+function buscarDepois(fn) { clearTimeout(_esperaBusca); _esperaBusca = setTimeout(fn, 500); }
+function lerFiltroAg() {
+  const v = (id) => { const el = document.getElementById(id); return el ? el.value : undefined; };
+  const p = v('f-periodo'); const mudouPeriodo = p !== undefined && p !== filtroAg.periodo;
+  Object.assign(filtroAg, { periodo: p ?? filtroAg.periodo, ini: v('f-ini') ?? filtroAg.ini, fim: v('f-fim') ?? filtroAg.fim, status: v('f-status') ?? filtroAg.status });
+  if (mudouPeriodo) desenhar(); else listarAgenda();
+}
+TELAS.agenda = () => {
+  app.innerHTML = `${topo('Agenda')}
+    <div class="conteudo">
+      <label class="campo campo-filtro">Buscar paciente<input type="search" id="f-busca" placeholder="Nome do paciente..." value="${esc(filtroAg.busca)}" oninput="filtroAg.busca=this.value; buscarDepois(listarAgenda)"></label>
+      ${camposPeriodo(filtroAg, 'lerFiltroAg()')}
+      ${campoSelect('Status', 'f-status', OPCOES_STATUS, filtroAg.status, 'lerFiltroAg()')}
+      <div class="cab-lista"><b id="titulo-lista"></b><button class="ordem" onclick="filtroAg.desc=!filtroAg.desc; listarAgenda()" id="btn-ordem"></button></div>
+      <div id="lista-ag" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>`;
+  listarAgenda();
+};
+function listarAgenda() {
+  const termo = filtroAg.busca.trim().toLowerCase();
+  const per = intervaloPeriodo(filtroAg.periodo, filtroAg.ini, filtroAg.fim);
+  const st = (s) => (s === 'Aguardando confirmação' ? '' : (s || ''));
+  let lista = G.raq_agendamentos.filter((a) => (filtroAg.status === 'todos' || st(a.status) === filtroAg.status) && noPeriodo(a.data, per));
+  if (termo) lista = lista.filter((a) => nomeDoRegistro(a).toLowerCase().includes(termo));
+  lista.sort((a, b) => (String(a.data) + (a.horario || '')).localeCompare(String(b.data) + (b.horario || '')) * (filtroAg.desc ? -1 : 1));
+  document.getElementById('titulo-lista').textContent = `${lista.length} ${lista.length === 1 ? 'agendamento' : 'agendamentos'}`;
+  document.getElementById('btn-ordem').textContent = filtroAg.desc ? 'Data ▼ mais recentes' : 'Data ▲ próximas';
+  const dias = []; lista.forEach((a) => { const u = dias[dias.length - 1]; if (u && u.data === a.data) u.itens.push(a); else dias.push({ data: a.data, itens: [a] }); });
+  document.getElementById('lista-ag').innerHTML = lista.length ? dias.map((d) => `<section class="cartao">
+      <div class="dia-ag">${esc(dataBR(d.data))} <span>${esc(semanaCurta(d.data))}</span></div>
+      ${d.itens.map(linhaAgendamento).join('')}</section>`).join('')
+    : '<p class="vazio">Nenhum agendamento encontrado para os filtros selecionados.</p>';
+}
+function linhaAgendamento(a) {
+  const det = [a.duracao ? a.duracao + ' min' : '60 min', a.local || ''].filter(Boolean).join(' · ');
+  return `<button class="linha-ag" onclick="${a.pacienteId ? `ir('ficha','${esc(a.pacienteId)}')` : `verAgendamento('${esc(a.id)}')`}">
+    <span class="hora">${esc(a.horario || '—')}</span>
+    <span class="nome">${esc(nomeDoRegistro(a))}${marcaAvulso(a)}<span class="det">${esc(det)}</span></span>${etiquetaStatus(a.status)}</button>`;
+}
+function verAgendamento(id) {
+  const a = G.raq_agendamentos.find((x) => x.id === id); if (!a) return;
+  abrirFolha(`<h2>Agendamento de ${esc(dataBR(a.data))}</h2><div class="cartao dados">${linhasDados([['Paciente', nomeDoRegistro(a) + (a.pacienteId ? '' : ' (não cadastrado)')],
+    ['Data da consulta', dataBR(a.data)], ['Horário', a.horario], ['Duração', (a.duracao || 60) + ' min'], ['Local', a.local], ['Status', a.status || 'Aguardando confirmação']])}</div>`);
+}
+// Agenda da ficha (renderizarAgendaPaciente): do paciente, em ordem de data
+let agendaFichaDesc = false;
+TELAS.agendaFicha = (id) => {
+  const p = pacientes().find((x) => x.id === id) || {};
+  const lista = G.raq_agendamentos.filter((a) => a.pacienteId === id)
+    .sort((a, b) => (String(a.data) + (a.horario || '')).localeCompare(String(b.data) + (b.horario || '')) * (agendaFichaDesc ? -1 : 1));
+  app.innerHTML = `${topo('Agenda')}
+    <div class="faixa-pac"><p><b>${esc(p.nome || '')}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}</p></div>
+    <div class="conteudo">
+      <button class="ordem ordem-data" onclick="agendaFichaDesc=!agendaFichaDesc; desenhar()">${agendaFichaDesc ? 'Data ▼ mais recentes' : 'Data ▲ mais antigas'}</button>
+      ${lista.length ? `<section class="cartao">${lista.map((a) => `<button class="linha-ag" onclick="verAgendamento('${esc(a.id)}')"><span class="data-ag">${esc(dataBR(a.data))}<small>${esc(a.horario || '')}</small></span>
+          <span class="nome">${esc(a.local || '—')}<span class="det">${esc((a.duracao || 60) + ' min')}</span></span>${etiquetaStatus(a.status)}</button>`).join('')}</section>`
+        : '<p class="vazio">Nenhum agendamento para este paciente ainda.</p>'}
+    </div>`;
+};
+
+// ---------- Financeiro geral (consulta) — filtros e totais iguais ao notebook (renderizarFinanceiroGeral) ----------
+let filtroFin = { busca: '', periodo: 'hoje', ini: '', fim: '', pagamento: 'todos', nota: 'todos', desc: true };
+const OPCOES_PAGAMENTO = [['todos', 'Todos'], ['Sim', 'Pago'], ['Não', 'Pendente'], ['Abonado', 'Abonado']];
+const OPCOES_NOTA = [['todos', 'Todas'], ['Sim', 'Emitida'], ['Não', 'Não emitida']];
+function lerFiltroFin() {
+  const v = (id) => { const el = document.getElementById(id); return el ? el.value : undefined; };
+  const p = v('f-periodo'); const mudouPeriodo = p !== undefined && p !== filtroFin.periodo;
+  Object.assign(filtroFin, { periodo: p ?? filtroFin.periodo, ini: v('f-ini') ?? filtroFin.ini, fim: v('f-fim') ?? filtroFin.fim, pagamento: v('f-pag') ?? filtroFin.pagamento, nota: v('f-nota') ?? filtroFin.nota });
+  if (mudouPeriodo) desenhar(); else listarFinanceiro();
+}
+TELAS.financeiro = () => {
+  app.innerHTML = `${topo('Financeiro')}
+    <div class="conteudo">
+      <label class="campo campo-filtro">Buscar paciente<input type="search" id="f-busca" placeholder="Nome do paciente..." value="${esc(filtroFin.busca)}" oninput="filtroFin.busca=this.value; buscarDepois(listarFinanceiro)"></label>
+      ${camposPeriodo(filtroFin, 'lerFiltroFin()')}
+      <div class="dupla">${campoSelect('Pagamento', 'f-pag', OPCOES_PAGAMENTO, filtroFin.pagamento, 'lerFiltroFin()')}${campoSelect('Nota fiscal', 'f-nota', OPCOES_NOTA, filtroFin.nota, 'lerFiltroFin()')}</div>
+      <div class="totais" id="totais-fin"></div>
+      <div class="cab-lista"><b id="titulo-lista"></b><button class="ordem" onclick="filtroFin.desc=!filtroFin.desc; listarFinanceiro()" id="btn-ordem"></button></div>
+      <div id="lista-fin" class="cartao"></div>
+    </div>`;
+  listarFinanceiro();
+};
+// totais: com filtro de pagamento, só o da situação escolhida; sem filtro, recebido e pendente (+ abonado, se houver)
+function totaisHtml(lista, filtroPagamento) {
+  let rec = 0, pen = 0, abo = 0;
+  lista.forEach((f) => { const v = valorReal(f.valor), s = situacaoPag(f); if (s === 'pago') rec += v; else if (s === 'abonado') abo += v; else pen += v; });
+  const so = { Sim: 'pago', 'Não': 'pendente', Abonado: 'abonado' }[filtroPagamento];
+  const it = (n, v) => `<div>${n}<b>${v}</b></div>`;
+  const partes = [it('Lançamentos', lista.length)];
+  if (!so || so === 'pago') partes.push(it('Recebido', real(rec)));
+  if (!so || so === 'pendente') partes.push(it('Pendente', real(pen)));
+  if (so === 'abonado' || (!so && abo)) partes.push(it('Abonado', real(abo)));
+  return lista.length ? partes.join('') : '';
+}
+function listarFinanceiro() {
+  const termo = filtroFin.busca.trim().toLowerCase();
+  const per = intervaloPeriodo(filtroFin.periodo, filtroFin.ini, filtroFin.fim);
+  let lista = G.raq_financeiro.filter((f) => noPeriodo(f.data, per) && (filtroFin.pagamento === 'todos' || f.pagamento === filtroFin.pagamento) && (filtroFin.nota === 'todos' || f.notaFiscal === filtroFin.nota));
+  if (termo) lista = lista.filter((f) => nomeDoRegistro(f).toLowerCase().includes(termo));
+  lista.sort((a, b) => String(a.data || '').localeCompare(String(b.data || '')) * (filtroFin.desc ? -1 : 1));
+  document.getElementById('totais-fin').innerHTML = totaisHtml(lista, filtroFin.pagamento);
+  document.getElementById('titulo-lista').textContent = `${lista.length} ${lista.length === 1 ? 'lançamento' : 'lançamentos'}`;
+  document.getElementById('btn-ordem').textContent = filtroFin.desc ? 'Data ▼ mais recentes' : 'Data ▲ mais antigas';
+  const caixa = document.getElementById('lista-fin');
+  caixa.style.display = lista.length ? '' : 'none';
+  caixa.innerHTML = lista.map((f) => linhaLancamento(f, true)).join('');
+  const v = document.getElementById('fin-vazio'); if (v) v.remove();
+  if (!lista.length) caixa.insertAdjacentHTML('afterend', '<p class="vazio" id="fin-vazio">Nenhum lançamento encontrado para os filtros selecionados.</p>');
+}
+function linhaLancamento(f, comNome) {
+  return `<div class="item-pac"><button class="abrir" onclick="verLancamento('${esc(f.id)}')">
+      ${comNome ? `<span class="n">${esc(nomeDoRegistro(f))}${marcaAvulso(f)}</span>` : ''}
+      <span class="${comNome ? 'd' : 'n'}">${esc(dataBR(f.data))} · ${esc(f.valor || '—')}</span></button>
+    ${etiquetaPag(f)}<button class="olho" aria-label="Visualizar" onclick="verLancamento('${esc(f.id)}')">${ICONE.olho}</button></div>`;
+}
+// olhinho: os mesmos campos do notebook (_conteudoLancamento), só os que valem
+function verLancamento(id) {
+  const f = G.raq_financeiro.find((x) => x.id === id); if (!f) return;
+  const pago = f.pagamento === 'Sim';
+  const itens = [['Data da consulta', dataBR(f.data)], ['Valor da consulta', f.valor], ['Tipo de pagamento', f.tipoPagamento], ['Pagamento', f.pagamento]];
+  if (pago) itens.push(['Data de pagamento', dataBR(f.dataPagamento)], ['Precisa de nota fiscal?', f.precisaNota || 'Não']);
+  if (pago && f.precisaNota === 'Sim') itens.push(['Solicitada ao contador em:', dataBR(f.notaSolicitada)]);
+  itens.push(['Nota fiscal emitida?', f.notaFiscal || 'Não']);
+  if (f.notaFiscal === 'Sim') itens.push(['Número da nota', f.notaNumero], ['Data de emissão', dataBR(f.notaData)]);
+  abrirFolha(`<h2>Lançamento de ${esc(dataBR(f.data))}</h2><p style="margin:0 0 10px;font-weight:700;color:var(--verde-escuro)">${esc(nomeDoRegistro(f))}${marcaAvulso(f)}</p>
+    <div class="cartao dados">${linhasDados(itens)}<div class="l" style="flex-direction:column;gap:4px"><span>Observações</span><span style="white-space:pre-wrap;text-align:left;color:var(--texto);font-weight:400">${esc(valor(f.observacoes))}</span></div></div>`);
+}
+// Financeiro da ficha (renderizarFinanceiroPaciente): totais + lista do paciente
+let finFichaDesc = true;
+TELAS.financeiroFicha = (id) => {
+  const p = pacientes().find((x) => x.id === id) || {};
+  const lista = G.raq_financeiro.filter((f) => f.pacienteId === id).sort((a, b) => String(a.data || '').localeCompare(String(b.data || '')) * (finFichaDesc ? -1 : 1));
+  app.innerHTML = `${topo('Financeiro')}
+    <div class="faixa-pac"><p><b>${esc(p.nome || '')}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}</p></div>
+    <div class="conteudo">
+      ${lista.length ? `<div class="totais">${totaisHtml(lista, 'todos')}</div>` : ''}
+      <button class="ordem ordem-data" onclick="finFichaDesc=!finFichaDesc; desenhar()">${finFichaDesc ? 'Data ▼ mais recentes' : 'Data ▲ mais antigas'}</button>
+      ${lista.length ? `<div class="cartao">${lista.map((f) => linhaLancamento(f, false)).join('')}</div>` : '<p class="vazio">Nenhum lançamento para este paciente ainda.</p>'}
+    </div>`;
+};
+
+// ---------- Arquivos anexados (consulta) — lista como no notebook (renderizarArquivosPaciente) ----------
+// O conteúdo de cada arquivo fica numa "gaveta" própria no Drive e só é baixado quando a pessoa toca nele.
+const tamanhoArquivo = (b) => !b ? '' : b < 1024 ? b + ' B' : b < 1024 * 1024 ? (b / 1024).toFixed(0) + ' KB' : (b / (1024 * 1024)).toFixed(1) + ' MB';
+const ehOffice = (nome) => /\.(docx?|xlsx?|pptx?)$/i.test(nome || '');
+function tipoArquivo(a) { return a.htmlDoc ? 'documento' : a.tipo === 'application/pdf' ? 'pdf' : (a.tipo || '').startsWith('image/') ? 'imagem' : ehOffice(a.nomeOriginal) ? 'office' : 'outro'; }
+const ICONE_ARQ = {
+  imagem: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d7a6d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><circle cx="8.5" cy="9.5" r="1.7"/><path d="M21 16l-6-6-9 9"/></svg>',
+  doc: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d7a6d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>',
+};
+TELAS.arquivos = (id) => {
+  const p = pacientes().find((x) => x.id === id) || {};
+  const lista = ((G.raq_arquivos_pacientes || {})[id] || []).slice().sort((a, b) => String(b.dataUpload || '').localeCompare(String(a.dataUpload || '')));
+  app.innerHTML = `${topo('Arquivos anexados')}
+    <div class="faixa-pac"><p><b>${esc(p.nome || '')}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}</p></div>
+    <div class="conteudo">
+      ${lista.length ? `<div class="cartao">${lista.map((a) => `<div class="item-pac"><span style="flex:none">${tipoArquivo(a) === 'imagem' ? ICONE_ARQ.imagem : ICONE_ARQ.doc}</span>
+          <button class="abrir" onclick="abrirArquivo('${esc(id)}','${esc(a.id)}')"><span class="n">${esc(a.nome || a.nomeOriginal || 'Arquivo')}</span>
+          <span class="d">${esc([a.dataUpload ? new Date(a.dataUpload).toLocaleDateString('pt-BR') : '', tamanhoArquivo(a.tamanho)].filter(Boolean).join(' · '))}</span></button>
+          <button class="olho" aria-label="Visualizar" onclick="abrirArquivo('${esc(id)}','${esc(a.id)}')">${ICONE.olho}</button></div>`).join('')}</div>`
+        : '<p class="vazio">Nenhum arquivo enviado ainda.</p>'}
+    </div>`;
+};
+function dataUrlParaBlob(d) {
+  const m = /^data:([^;,]*)(;base64)?,(.*)$/s.exec(d || ''); if (!m) return null;
+  const bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return new Blob([u], { type: m[1] || 'application/octet-stream' });
+}
+async function abrirArquivo(pid, aid) {
+  const a = ((G.raq_arquivos_pacientes || {})[pid] || []).find((x) => x.id === aid); if (!a) return;
+  const tipo = tipoArquivo(a);
+  const campo = tipo === 'documento' ? 'htmlDoc' : 'dados';
+  let conteudo = a[campo] && a[campo] !== '@cofre' ? a[campo] : null;
+  if (!conteudo) {
+    if (!D.temPasse()) { try { await D.entrar(); } catch (e) { if (e.message !== 'CANCELADO') avisar(e.message); return; } }
+    avisar('Abrindo o arquivo...');
+    try { conteudo = await N.lerAnexo(chave, D.transporte, a.id, campo); }
+    catch (e) { avisar(e.code === 'SEM_INTERNET' ? 'Sem internet. Para abrir o arquivo, conecte-se à internet.' : 'Não foi possível abrir o arquivo.'); return; }
+    if (!conteudo) { avisar('O arquivo ainda não chegou ao Google Drive. Tente mais tarde.'); return; }
+  }
+  const nome = a.nome || a.nomeOriginal || 'Arquivo';
+  if (tipo === 'imagem') { ampliar(`<img src="${esc(conteudo)}" alt="" style="width:100%;height:auto;display:block;border-radius:8px">`, nome); return; }
+  if (tipo === 'documento') {
+    const zoom = Math.min(1, (window.innerWidth - 48) / 820).toFixed(3);
+    ampliar(`<iframe class="doc-avulso" sandbox="" srcdoc="${esc('<style>html{zoom:' + zoom + '}</style>' + conteudo)}"></iframe>`, nome); return;
+  }
+  // PDF, Word, Excel...: o próprio celular abre (menu de compartilhar → abrir no app certo)
+  const blob = dataUrlParaBlob(conteudo); if (!blob) { avisar('Não foi possível abrir o arquivo.'); return; }
+  const arquivo = new File([blob], a.nomeOriginal || nome, { type: blob.type });
+  if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+    try { await navigator.share({ files: [arquivo], title: nome }); } catch (e) { /* cancelou */ }
+    return;
+  }
+  const url = URL.createObjectURL(blob); const l = document.createElement('a'); l.href = url; l.download = arquivo.name; document.body.appendChild(l); l.click(); l.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
 let consultasDesc = true;
 TELAS.consultas = (id) => {
   const p = pacientes().find((x) => x.id === id) || {};
@@ -588,7 +995,7 @@ TELAS.configuracoes = () => {
       <div class="cartao dados"><div class="l"><span>Última atualização</span><span>${esc(quandoCurto(estado.ultima))}</span></div></div>
       <button class="btn" onclick="atualizarComGoogle()">Atualizar agora</button>
       <p class="grupo">Sobre</p>
-      <div class="cartao dados"><div class="l"><span>Versão</span><span>celular 0.3 (consulta)</span></div></div>
+      <div class="cartao dados"><div class="l"><span>Versão</span><span>celular 0.6 (consulta)</span></div></div>
       <p style="font-size:12px;color:var(--texto-ter);margin:4px 2px">Usuários, backup, registro de atividades e licença ficam no notebook.</p>
       <button class="link" onclick="desligarCelular()">Tirar os dados deste celular</button>
     </div>`;
