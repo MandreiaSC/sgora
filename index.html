@@ -339,14 +339,36 @@ function abrirFolha(html, textoFechar = 'Fechar') {
 }
 
 // ====================== início ======================
+// Abre o que está guardado no celular. Um erro de leitura (o iPhone às vezes perde a ligação com o armazém quando o
+// aplicativo volta do segundo plano) NUNCA leva a "Configurar este celular": tenta de novo e, se não der, avisa.
+async function lerComTentativas(fn) {
+  let ultimoErro;
+  for (let i = 0; i < 4; i++) {
+    try { return { ok: true, valor: await fn() }; } catch (e) { ultimoErro = e; await new Promise((r) => setTimeout(r, 400 * (i + 1))); }
+  }
+  return { ok: false, erro: ultimoErro };
+}
 async function iniciar() {
-  try { chave = await A.ler('chave'); } catch (e) { chave = null; }
+  const rc = await lerComTentativas(() => A.ler('chave'));
+  if (!rc.ok) { telaErroArmazem(); return; }
+  chave = rc.valor || null;
   if (!chave) { pilha = [['configurar', [1]]]; desenhar(); return; }
-  try { estado = await A.lerEstado(chave); } catch (e) { estado = null; }
+  const re = await lerComTentativas(() => A.lerEstado(chave));
+  if (!re.ok) { telaErroArmazem(); return; }
+  estado = re.valor || null;
   if (!estado) { pilha = [['configurar', [1]]]; desenhar(); return; }
   G = N.montarGavetas(estado);
+  guardarParaSempre();
   pilha = [['entrar', []]]; desenhar();
 }
+function telaErroArmazem() {
+  app.innerHTML = `<div class="tela-entrada"><img src="maos.png" alt=""><p class="marca">SGO_RA</p><div class="quadro-entrada">
+    <h1>Não foi possível abrir os dados</h1>
+    <p class="aviso">Os dados deste celular continuam guardados. Feche o aplicativo e abra de novo.</p>
+    <button class="btn" onclick="iniciar()">Tentar de novo</button></div></div>`;
+}
+// pede ao aparelho para não apagar os dados do aplicativo quando faltar espaço
+function guardarParaSempre() { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* sem efeito */ } }
 
 // ====================== configurar este celular (1ª vez) ======================
 const TELAS = {};
@@ -393,7 +415,7 @@ async function configurarCodigo() {
     });
     est.ultima = new Date().toISOString();
     await A.gravar('chave', k); await A.gravarEstado(k, est);
-    chave = k; estado = est; G = N.montarGavetas(est);
+    chave = k; estado = est; G = N.montarGavetas(est); guardarParaSempre();
     pilha = [['entrar', []]]; desenhar();
   } catch (e) {
     const msg = e.code === 'CODIGO_INCORRETO' ? 'Código do cofre incorreto. Confira a folha do kit.' : e.code === 'CODIGO_INVALIDO' ? 'O código tem 24 letras e números. Confira a folha do kit.' : e.message;
@@ -2111,7 +2133,7 @@ TELAS.configuracoes = () => {
       <div class="cartao dados"><div class="l"><span>Última atualização</span><span>${esc(quandoCurto(estado.ultima))}</span></div></div>
       <button class="btn" onclick="atualizarComGoogle()">Atualizar agora</button>
       <p class="grupo">Sobre</p>
-      <div class="cartao dados"><div class="l"><span>Versão</span><span>celular 0.9.1</span></div></div>
+      <div class="cartao dados"><div class="l"><span>Versão</span><span>celular 0.9.2</span></div></div>
       <p style="font-size:12px;color:var(--texto-ter);margin:4px 2px">Usuários, backup, registro de atividades e licença ficam no notebook.</p>
       <button class="link" onclick="desligarCelular()">Tirar os dados deste celular</button>
     </div>`;
