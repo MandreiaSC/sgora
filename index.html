@@ -158,7 +158,15 @@
   .avulso{font-size:12px; color:#8a5a00;}
   #lista-fin .item-pac, .cartao > .item-pac{border-bottom:1px solid var(--borda);}
   #lista-fin .item-pac:last-child, .cartao > .item-pac:last-child{border-bottom:0;}
-  .doc-avulso{width:100%; height:75vh; border:1px solid var(--borda); border-radius:8px; background:#fff;}
+  /* documento avulso: folha do tamanho real (A4), encolhida para caber; amplia com dois dedos ou − / + */
+  .folha-doc{display:flex; flex-direction:column; height:100%;}
+  .folha-doc h2{margin-bottom:8px;}
+  .zoom-doc{display:flex; justify-content:flex-end; align-items:center; gap:8px; margin:0 0 8px;}
+  .zoom-doc button{width:44px; height:38px; border:1.5px solid var(--borda); border-radius:10px; background:#fff; color:var(--verde); font-size:21px; font-weight:600; font-family:inherit;}
+  .zoom-doc span{min-width:50px; text-align:center; font-size:14px; color:var(--texto-sec);}
+  .visor-doc{flex:1 1 auto; min-height:0; overflow:auto; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y; border-radius:10px; background:#6f7f7b;}
+  .visor-escala{position:relative; overflow:hidden;}
+  .visor-escala iframe{position:absolute; left:0; top:0; border:0; transform-origin:0 0; pointer-events:none; background:#6f7f7b;}
   .totais{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px;}
   .totais div{background:#fff; border-radius:10px; box-shadow:var(--sombra); padding:10px 12px; font-size:13px; color:var(--texto-sec);}
   .totais b{display:block; font-size:17px; color:var(--verde-escuro);}
@@ -170,6 +178,26 @@
   .legenda-principal{margin:0 2px; font-size:13px; color:var(--texto-sec);}
   .seg-bio{min-width:104px; min-height:38px; border-radius:999px; border:1px solid var(--borda); background:#eef2f1; color:var(--texto-sec); font-size:14px; font-weight:700; flex:none;}
   .seg-bio.ligado{background:var(--verde-claro); border-color:var(--verde-claro); color:#fff;}
+  .campo textarea{border:1px solid var(--borda); border-radius:10px; padding:10px 14px; font-size:16px; font-family:inherit; color:var(--texto); background:#fff; width:100%; min-height:96px; resize:vertical;}
+  .marcar{display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600; color:var(--texto-sec); min-height:40px;}
+  .marcar input{width:22px; height:22px; flex:none; accent-color:var(--verde-claro);}
+  .pac-fixo{margin:0; font-size:16px; font-weight:700; color:var(--verde-escuro);}
+  .btn.perigo{background:#c0392b;}
+  .btn.pequeno{min-height:40px; font-size:14px; width:auto; padding:0 14px;}
+  button.mini{text-align:left; border:0; font:inherit; width:100%; cursor:pointer;}
+  .linha-lemb{display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--borda);}
+  .linha-lemb:last-child{border-bottom:0;}
+  .linha-lemb input[type=checkbox]{width:24px; height:24px; flex:none; accent-color:var(--verde-claro);}
+  .linha-lemb .tx{flex:1; min-width:0; font-size:15px; overflow-wrap:anywhere;}
+  .linha-lemb .tx small{display:block; font-size:12px; color:var(--texto-sec); font-weight:600;}
+  .linha-lemb.feito .tx{text-decoration:line-through; color:#9db3ae;}
+  .botoes-arq{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px;}
+  .botoes-arq .btn{flex-direction:column; gap:4px; min-height:66px; font-size:14px; padding:0 6px;}
+  .cel-neural{width:100%; height:34px; border:0; background:transparent; text-align:center; font-size:16px; font-family:inherit; color:var(--texto); padding:0;}
+  .cel-neural:focus{outline:2px solid var(--verde-claro); background:#fff;}
+  .canvas-cel{width:100%; max-width:420px; aspect-ratio:1; display:block; margin:0 auto; background:#fff; border:1px solid var(--borda); border-radius:10px; touch-action:none;}
+  .area-cadeia{flex:1 1 0; min-height:0; display:flex; justify-content:center; align-items:center; margin:10px 0; touch-action:none; overflow:hidden;}
+  .area-cadeia svg{height:100%; max-height:100%; width:auto; max-width:100%; aspect-ratio:480 / 1142; display:block;}
   .aviso-flutuante{position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 24px); transform:translateX(-50%); background:var(--verde-escuro); color:#fff; padding:10px 16px; border-radius:10px; font-size:14px; z-index:30; max-width:90vw; text-align:center;}
 </style>
 </head>
@@ -284,7 +312,7 @@ const MARCA = (grande) => `<span class="marca-topo${grande ? ' grande' : ''}"><i
 function ir(tela, ...args) { pilha.push([tela, args]); desenhar(); window.scrollTo(0, 0); }
 async function voltar() {
   if (formularioAlterado && !(await perguntar('Existem alterações que ainda não foram salvas.\nDeseja sair sem salvar?', 'Sair sem salvar', 'Continuar editando'))) return;
-  formularioAlterado = false;
+  formularioAlterado = false; _sequenciaNovo = null;
   if (pilha.length > 1) pilha.pop(); desenhar(); window.scrollTo(0, 0);
 }
 function desenhar() { const [tela, args] = pilha[pilha.length - 1]; TELAS[tela](...args); }
@@ -523,11 +551,23 @@ async function salvarRegistro(k, valorNovo) {
   enviarPendentes().then((n) => { if (n) A.gravarEstado(chave, estado); redesenharSituacao(); }).catch(() => redesenharSituacao());
   return v;
 }
+// exclusão: vai para o notebook como "excluído" (lá vira lápide, como uma exclusão feita no próprio notebook)
+async function excluirRegistro(k) {
+  const em = new Date().toISOString();
+  const atual = estado.registros.get(k);
+  const pend = estado.pendentes.get(k);
+  estado.pendentes.set(k, { v: null, em, base: pend ? pend.base : (atual && atual.v) || null });
+  estado.registros.set(k, { v: null, em });
+  G = N.montarGavetas(estado);
+  await A.gravarEstado(chave, estado);
+  enviarPendentes().then((n) => { if (n) A.gravarEstado(chave, estado); redesenharSituacao(); }).catch(() => redesenharSituacao());
+}
 // chegou de outro aparelho uma versão mais nova de um registro que o celular também mudou: junta campo a campo
 function reconciliarPendentes() {
   for (const [k, p] of estado.pendentes) {
     const r = estado.registros.get(k);
     if (!r || r.em === p.em) continue;
+    if (!p.v) { estado.registros.set(k, { v: null, em: p.em }); continue; }   // excluído no celular: continua excluído
     const em = new Date().toISOString();
     const v = { ...N.juntarComRemoto(p.v, p.base, r.v), [N.CAMPO_CARIMBO]: em };
     estado.pendentes.set(k, { v, em, base: r.v });
@@ -538,13 +578,26 @@ function reconciliarPendentes() {
 let enviando = null;
 async function enviarPendentes() {
   if (!estado.pendentes.size || !D.temPasse()) return 0;
-  if (enviando) return enviando;
+  // já está enviando: espera terminar e manda o que chegou nesse meio-tempo (nada fica parado no celular)
+  if (enviando) { try { await enviando; } catch (e) { /* tenta de novo abaixo */ } return enviarPendentes(); }
   enviando = (async () => {
-    const lista = [...estado.pendentes].map(([k, p]) => ({ k, v: p.v, em: p.em }));
-    const nome = await N.enviarLote(chave, D.transporte, estado.aparelho, lista);
-    estado.aplicados.add(nome);
-    for (const m of lista) { const p = estado.pendentes.get(m.k); if (p && p.em === m.em) estado.pendentes.delete(m.k); }
-    return lista.length;
+    let total = 0;
+    while (estado.pendentes.size && D.temPasse()) {
+      // primeiro o conteúdo dos arquivos anexados no celular (o notebook só aceita o arquivo se o conteúdo já estiver lá)
+      for (const a of (estado.anexosPendentes || []).slice()) {
+        const conteudo = await A.lerTexto(chave, `anexo_${a.id}_${a.campo}`);
+        if (conteudo) await N.enviarAnexo(chave, D.transporte, a.id, a.campo, conteudo);
+        estado.anexosPendentes = estado.anexosPendentes.filter((x) => !(x.id === a.id && x.campo === a.campo));
+        await A.gravarEstado(chave, estado);
+        A.apagarTexto(`anexo_${a.id}_${a.campo}`).catch(() => {});
+      }
+      const lista = [...estado.pendentes].map(([k, p]) => ({ k, v: p.v, em: p.em }));
+      const nome = await N.enviarLote(chave, D.transporte, estado.aparelho, lista);
+      estado.aplicados.add(nome);
+      for (const m of lista) { const p = estado.pendentes.get(m.k); if (p && p.em === m.em) estado.pendentes.delete(m.k); }
+      total += lista.length;
+    }
+    return total;
   })();
   try { return await enviando; } finally { enviando = null; }
 }
@@ -584,14 +637,14 @@ TELAS.hoje = () => {
       ${MARCA(true)}</header>
     <div class="conteudo">
       <section class="cartao agenda-dia"><div class="faixa">${ICONE.agenda}<b>Agenda do dia</b><span class="contador">${ag.length}</span></div><div class="lista-ag">
-        ${ag.length ? ag.map((a) => `<button class="linha-ag" onclick="${a.pacienteId ? `ir('ficha','${esc(a.pacienteId)}')` : ''}"><span class="hora">${esc(a.horario || '')}</span>
+        ${ag.length ? ag.map((a) => `<button class="linha-ag" onclick="ir('formAgendamento','${esc(a.id)}')"><span class="hora">${esc(a.horario || '')}</span>
           <span class="nome">${a.pacienteId ? esc(nomePaciente(a.pacienteId)) : `${esc(a.pacienteNomeAvulso || '')} <span style="font-size:12px;color:#8a5a00">(não cadastrado)</span>`}</span>${etiquetaStatus(a.status)}</button>`).join('')
           : '<p class="vazio">Nenhum agendamento hoje.</p>'}</div></section>
       <div class="dupla">
-        <section class="mini lembretes"><p>Lembretes ${lembretes.length ? `<span style="font-size:12px;background:#f6d3cf;border-radius:999px;padding:0 7px">${lembretes.length}</span>` : ''}</p>
-          ${lembretes.length ? `<ul>${lembretes.slice(0, 5).map((l) => `<li>${esc(l.texto)}</li>`).join('')}</ul>` : '<p style="font-weight:400;font-size:13px;color:#5c7570;margin:0">Nenhum lembrete.</p>'}</section>
-        <section class="mini aniversario"><p>Aniversariantes ${aniversario.length ? `<span style="font-size:12px;background:#f6e3b8;border-radius:999px;padding:0 7px">${aniversario.length}</span>` : ''}</p>
-          ${aniversario.length ? `<ul>${aniversario.map((p) => `<li>${esc(p.nome)}</li>`).join('')}</ul>` : '<p style="font-weight:400;font-size:13px;color:#5c7570;margin:0">Nenhum hoje.</p>'}</section>
+        <button class="mini lembretes" onclick="ir('lembretes')"><p>Lembretes ${lembretes.length ? `<span style="font-size:12px;background:#f6d3cf;border-radius:999px;padding:0 7px">${lembretes.length}</span>` : ''}</p>
+          ${lembretes.length ? `<ul>${lembretes.slice(0, 5).map((l) => `<li>${esc(l.texto)}</li>`).join('')}</ul>` : '<p style="font-weight:400;font-size:13px;color:#5c7570;margin:0">Nenhum lembrete.</p>'}</button>
+        <button class="mini aniversario" onclick="ir('aniversariantes')"><p>Aniversariantes ${aniversario.length ? `<span style="font-size:12px;background:#f6e3b8;border-radius:999px;padding:0 7px">${aniversario.length}</span>` : ''}</p>
+          ${aniversario.length ? `<ul>${aniversario.map((p) => `<li>${esc(p.nome)}</li>`).join('')}</ul>` : '<p style="font-weight:400;font-size:13px;color:#5c7570;margin:0">Nenhum hoje.</p>'}</button>
       </div>
       <div class="botoes-menu">
         <button class="bt" onclick="ir('pacientes')">${ICONE.pacientes}Pacientes</button>
@@ -691,7 +744,43 @@ const MASCARAS = {
   telefone: (v) => v.replace(/\D/g, '').slice(0, 10).replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2'),
   celular: (v) => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2'),
   cep: (v) => v.replace(/\D/g, '').slice(0, 8).replace(/(\d{5})(\d)/, '$1-$2'),
+  data: (v) => v.replace(/\D/g, '').slice(0, 8).replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2}\/\d{2})(\d)/, '$1/$2'),
+  hora: (v) => v.replace(/\D/g, '').slice(0, 4).replace(/(\d{2})(\d)/, '$1:$2'),
+  // igual ao mascararValorFinanceiro do notebook
+  valor: (v) => { const d = v.replace(/\D/g, ''); if (!d) return ''; return 'R$ ' + (parseInt(d, 10) / 100).toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+,)/g, '$1.'); },
 };
+// datas digitadas (dd/mm/aaaa) — guardadas como no notebook (aaaa-mm-dd)
+const brDeIso = (iso) => iso ? String(iso).split('-').reverse().join('/') : '';
+function isoDeBr(s) {
+  s = String(s || '').trim(); if (!s) return '';
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(s); if (!m) return null;
+  const d = new Date(+m[3], +m[2] - 1, +m[1]);
+  return (d.getFullYear() === +m[3] && d.getMonth() === +m[2] - 1 && d.getDate() === +m[1]) ? `${m[3]}-${m[2]}-${m[1]}` : null;
+}
+function campoData(rotulo, nome, iso, depois = '') {
+  return campoForm(rotulo, nome, brDeIso(iso), 'text', `inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" autocomplete="off" oninput="this.value=MASCARAS.data(this.value); ${depois}"`);
+}
+function campoHora(rotulo, nome, valor) {
+  return campoForm(rotulo, nome, valor, 'text', 'inputmode="numeric" placeholder="hh:mm" maxlength="5" autocomplete="off" oninput="this.value=MASCARAS.hora(this.value)"');
+}
+// lê as datas do formulário; se alguma estiver errada, avisa, põe o cursor nela e devolve null
+function lerDatas(f, pares) {
+  const r = {};
+  for (const [nome, rotulo, obrigatoria] of pares) {
+    if (!f[nome]) { r[nome] = ''; continue; }
+    const v = isoDeBr(f[nome].value);
+    if (v === null || (obrigatoria && !v)) { avisar(v === null ? `${rotulo}: data inválida. Digite dd/mm/aaaa.` : `Preencha: ${rotulo.toLowerCase()}.`); f[nome].focus(); return null; }
+    r[nome] = v;
+  }
+  return r;
+}
+const horaValida = (h) => /^([01]\d|2[0-3]):[0-5]\d$/.test(h);
+function campoTexto(rotulo, nome, valor, linhas = 4) {
+  return `<label class="campo campo-form">${esc(rotulo)}<textarea name="${nome}" rows="${linhas}">${esc(valor || '')}</textarea></label>`;
+}
+function selectPares(rotulo, nome, valor, pares, extra = '', id = '') {
+  return `<label class="campo campo-form"${id ? ` id="${id}"` : ''}>${esc(rotulo)}<select name="${nome}" ${extra}>${pares.map(([v, t]) => `<option value="${esc(v)}" ${String(v) === String(valor ?? '') ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
+}
 const PRINCIPAIS = ['nome', 'nascimento', 'sexo', 'identidade', 'cpf', 'celular'];
 function campoForm(rotulo, nome, valor, tipo = 'text', extra = '') {
   const marca = PRINCIPAIS.includes(nome) ? ' <span class="principal" aria-label="principal">•</span>' : '';
@@ -701,17 +790,19 @@ function selectForm(rotulo, nome, valor, opcoes) {
   const marca = PRINCIPAIS.includes(nome) ? ' <span class="principal" aria-label="principal">•</span>' : '';
   return `<label class="campo campo-form">${esc(rotulo)}${marca}<select name="${nome}"><option value="">Selecione</option>${opcoes.map((o) => `<option ${o === valor ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
 }
-TELAS.dados = (id) => {
+// extra (só em paciente novo): { nome, vinculo } — vindo de um agendamento/lançamento de paciente não cadastrado
+TELAS.dados = (id, extra) => {
   const novo = !id;
-  const p = novo ? { dataCadastro: hojeISO() } : (pacientes().find((x) => x.id === id) || {});
+  const p = novo ? { dataCadastro: hojeISO(), nome: (extra && extra.nome) || '' } : (pacientes().find((x) => x.id === id) || {});
+  _vinculoCadastro = novo && extra ? extra.vinculo || null : null;
   formularioAlterado = false;
   app.innerHTML = `${topo(novo ? 'Cadastrar paciente' : 'Dados cadastrais')}
     <form class="conteudo" id="form-paciente" onsubmit="event.preventDefault(); salvarPaciente(${novo ? 'null' : `'${esc(id)}'`})" oninput="formularioAlterado=true" onchange="formularioAlterado=true">
       <p class="grupo">Identificação</p>
       <div class="cartao form-cartao">
-        ${campoForm('Data do cadastro', 'dataCadastro', p.dataCadastro, 'date')}
+        ${campoData('Data do cadastro', 'dataCadastro', p.dataCadastro)}
         ${campoForm('Nome completo', 'nome', p.nome, 'text', 'autocapitalize="words" autocomplete="off"')}
-        ${campoForm('Data de nascimento', 'nascimento', p.nascimento, 'date', 'oninput="document.getElementById(\'idade-form\').textContent = idade(this.value) || \'—\'"')}
+        ${campoData('Data de nascimento', 'nascimento', p.nascimento, 'document.getElementById(\'idade-form\').textContent = idade(isoDeBr(this.value) || \'\') || \'—\'')}
         <p class="idade-form">Idade: <b id="idade-form">${esc(idade(p.nascimento) || '—')}</b></p>
         ${selectForm('Sexo', 'sexo', p.sexo, OP_SEXO)}
         ${campoForm('Naturalidade', 'naturalidade', p.naturalidade)}
@@ -755,11 +846,14 @@ function buscarCep(el) {
     if (preencheu) { formularioAlterado = true; avisar('Endereço preenchido pelo CEP.'); }
   }).catch(() => {});
 }
+let _vinculoCadastro = null;
 async function salvarPaciente(id) {
   const f = document.getElementById('form-paciente');
   const val = (n) => String(f[n].value || '').trim();
+  const datas = lerDatas(f, [['dataCadastro', 'Data do cadastro', false], ['nascimento', 'Data de nascimento', false]]);
+  if (!datas) return;
   const dados = {
-    id: id || ('p_' + Date.now()), dataCadastro: f.dataCadastro.value, nome: val('nome'), nascimento: f.nascimento.value, sexo: f.sexo.value,
+    id: id || ('p_' + Date.now()), dataCadastro: datas.dataCadastro, nome: val('nome'), nascimento: datas.nascimento, sexo: f.sexo.value,
     naturalidade: val('naturalidade'), estadoCivil: f.estadoCivil.value, escolaridade: f.escolaridade.value, profissao: val('profissao'),
     identidade: val('identidade'), cpf: val('cpf'), telefone: val('telefone'), celular: val('celular'), email: val('email'),
     logradouro: val('logradouro'), bairro: val('bairro'), cidade: val('cidade'), estado: val('estado').toUpperCase(), cep: val('cep'),
@@ -779,9 +873,10 @@ async function salvarPaciente(id) {
   const atual = id ? pacientes().find((x) => x.id === id) : null;
   await salvarRegistro('raq_pacientes|' + dados.id, Object.assign({}, atual || {}, dados));   // mantém o que não está no formulário
   formularioAlterado = false;
+  if (!id) await vincularAvulsoAoPacienteNovo(dados.id);
   avisar('Paciente salvo com sucesso.');
   if (id) { pilha.pop(); desenhar(); }
-  else { pilha.pop(); ir('ficha', dados.id); }
+  else { pilha.pop(); ir('ficha', dados.id); _sequenciaNovo = dados.id; ir('formAnamnese', dados.id); }   // paciente novo: Anamnese → Exame → Consultas
 }
 // ---------- Anamnese (consulta) — mesmos campos, ordem e rótulos do notebook (form-anamnese) ----------
 const vazio = (v) => v == null || String(v).trim() === '';
@@ -816,6 +911,7 @@ TELAS.anamnese = (id) => {
   app.innerHTML = `${topo('Anamnese' + (fases(p).length > 1 ? ' — Fase ' + n : ''))}
     <div class="faixa-pac"><p><b>${esc(p.nome || '')}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}</p></div>
     <div class="conteudo">
+      <button class="btn" onclick="ir('formAnamnese','${esc(id)}')">${preenchida ? 'Editar anamnese' : 'Preencher anamnese'}</button>
       ${preenchida ? '' : '<p class="aviso">Anamnese ainda não preenchida.</p>'}
       ${blocoTexto('Queixa principal', a.queixaPrincipal)}
       ${blocoTexto('Queixa secundária', a.queixaSecundaria)}
@@ -879,6 +975,7 @@ TELAS.exame = (id) => {
   app.innerHTML = `${topo('Exame físico' + (fases(p).length > 1 ? ' — Fase ' + n : ''))}
     <div class="faixa-pac"><p><b>${esc(p.nome || '')}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}</p></div>
     <div class="conteudo">
+      <button class="btn" onclick="ir('formExame','${esc(id)}')">${preenchido ? 'Editar exame físico' : 'Preencher exame físico'}</button>
       ${preenchido ? '' : '<p class="aviso">Exame físico ainda não preenchido.</p>'}
       ${blocoAbrir('Inspeção estática', resumoLista(estatica), linhasDadosTexto(estatica))}
       ${blocoAbrir('Inspeção dinâmica', vazio(e.inspecaoDinamica) ? 'Não preenchido' : e.inspecaoDinamica.replace(/\s+/g, ' '),
@@ -917,11 +1014,252 @@ function corpoNeural(e) {
     <p class="rot-tab">Plexo braquial</p>${tabelaNeural('plexo', LINHAS_PLEXO, e.tabelaPlexo)}`;
 }
 
+// ====================== Anamnese e Exame físico: editar ======================
+// Campos, opções e rótulos do notebook (form-anamnese/salvarAnamnese, form-exame/salvarExameFisico).
+// Campo que só aparece com "Sim": <... data-se="nomeDoSelect"> (como o alternarCondicional do notebook).
+function mostrarSe(f) { f.querySelectorAll('[data-se]').forEach((el) => { el.style.display = f[el.dataset.se] && f[el.dataset.se].value === 'Sim' ? '' : 'none'; }); }
+const SIM_NAO = [['Não', 'Não'], ['Sim', 'Sim']];
+const opcoes = (lista) => lista.map((o) => [o, o]);
+function campoSe(depende, html) { return `<div data-se="${depende}" style="display:flex;flex-direction:column;gap:12px">${html}</div>`; }
+const cartaoGrupo = (titulo, html) => `<p class="grupo">${esc(titulo)}</p><div class="cartao form-cartao">${html}</div>`;
+let _sequenciaNovo = null;   // paciente novo (ou nova fase): cadastro → Anamnese → Exame físico → Consultas
+
+TELAS.formAnamnese = (id) => {
+  const p = pacientes().find((x) => x.id === id); if (!p) { voltar(); return; }
+  const n = faseFicha[id] || faseAtual(p);
+  const a = anamneseDaFase(id, n);
+  formularioAlterado = false;
+  app.innerHTML = `${topo('Anamnese' + (fases(p).length > 1 ? ' — Fase ' + n : ''))}${faixaDoPaciente(id)}
+    <form class="conteudo" ${formularioVigiado('form-an', `salvarAnamneseCel('${esc(id)}')`)}>
+      <div class="cartao form-cartao">
+        ${campoTexto('Queixa principal', 'queixaPrincipal', a.queixaPrincipal, 3)}
+        ${campoTexto('Queixa secundária', 'queixaSecundaria', a.queixaSecundaria, 3)}
+        ${campoTexto('História clínica e antecedentes', 'historiaClinica', a.historiaClinica, 4)}
+      </div>
+      ${cartaoGrupo('Hábitos', `
+        ${selectPares('Bebida alcoólica', 'alcool', a.alcool || 'Não', SIM_NAO, 'onchange="mostrarSe(this.form)"')}
+        ${campoSe('alcool', selectPares('Frequência', 'alcoolFrequencia', a.alcoolFrequencia || 'Diariamente', opcoes(['Diariamente', 'Socialmente'])))}
+        ${selectPares('Fumo', 'fumo', a.fumo || 'Não', SIM_NAO, 'onchange="mostrarSe(this.form)"')}
+        ${campoSe('fumo', selectPares('Frequência', 'fumoFrequencia', a.fumoFrequencia || 'Mais de 10 ao dia', opcoes(['Mais de 10 ao dia', '1 a 5 ao dia', 'Ocasionalmente'])))}
+        ${selectPares('Atividade física', 'atividade', a.atividade || 'Não', SIM_NAO, 'onchange="mostrarSe(this.form)"')}
+        ${campoSe('atividade', campoForm('Qual(is)', 'atividadeQual', a.atividadeQual) + campoForm('Quantas vezes por semana', 'atividadeVezes', a.atividadeVezes, 'text', 'inputmode="numeric"'))}`)}
+      ${cartaoGrupo('Tipo de alimentação', `
+        ${campoForm('Café da manhã', 'alimCafe', a.alimCafe)}${campoForm('Almoço', 'alimAlmoco', a.alimAlmoco)}
+        ${campoForm('Jantar', 'alimJantar', a.alimJantar)}${campoForm('Lanches', 'alimLanches', a.alimLanches)}`)}
+      ${cartaoGrupo('Distúrbios', `
+        ${selectPares('Distúrbios viscerais', 'circulatorios', a.circulatorios || 'Não', SIM_NAO, 'onchange="mostrarSe(this.form)"')}
+        ${campoSe('circulatorios', campoForm('Qual(is)', 'circulatoriosQual', a.circulatoriosQual))}
+        ${selectPares('Distúrbios cranianos', 'cranianos', a.cranianos || 'Não', SIM_NAO, 'onchange="mostrarSe(this.form)"')}
+        ${campoSe('cranianos', campoForm('Qual(is)', 'cranianosQual', a.cranianosQual))}
+        ${selectPares('Distúrbios emocionais', 'emocionais', a.emocionais || 'Não', SIM_NAO, 'onchange="mostrarSe(this.form)"')}
+        ${campoSe('emocionais', campoForm('Qual(is)', 'emocionaisQual', a.emocionaisQual))}`)}
+      ${p.sexo === 'Feminino' ? cartaoGrupo('Saúde da mulher', `
+        ${campoForm('Menarca', 'menarca', a.menarca)}${campoForm('Menopausa', 'menopausa', a.menopausa)}
+        ${selectPares('Menstruação', 'menstruacao', a.menstruacao || '', [['', 'Selecione'], ['Regular', 'Regular'], ['Irregular', 'Irregular']])}
+        ${campoForm('Número de gestações', 'gestacoes', a.gestacoes, 'text', 'inputmode="numeric"')}${campoForm('Número de filhos', 'filhos', a.filhos, 'text', 'inputmode="numeric"')}
+        ${campoForm('Número de abortos', 'abortos', a.abortos, 'text', 'inputmode="numeric"')}`) : ''}
+      ${cartaoGrupo('Medicamentos', campoTexto('Medicamentos', 'medicamentos', a.medicamentos, 3))}
+      <button class="btn" type="submit" style="min-height:54px;font-size:17px">Salvar anamnese</button>
+    </form>`;
+  mostrarSe(document.getElementById('form-an'));
+};
+async function salvarAnamneseCel(id) {
+  const f = document.getElementById('form-an');
+  const p = pacientes().find((x) => x.id === id);
+  const n = faseFicha[id] || faseAtual(p);
+  const t = (k) => f[k] ? f[k].value.trim() : '';
+  const v = (k) => f[k] ? f[k].value : '';
+  const anterior = anamneseDaFase(id, n);
+  const dados = {
+    queixaPrincipal: t('queixaPrincipal'), queixaSecundaria: t('queixaSecundaria'), historiaClinica: t('historiaClinica'),
+    alcool: v('alcool'), alcoolFrequencia: v('alcoolFrequencia'), fumo: v('fumo'), fumoFrequencia: v('fumoFrequencia'),
+    atividade: v('atividade'), atividadeQual: t('atividadeQual'), atividadeVezes: t('atividadeVezes'),
+    alimCafe: t('alimCafe'), alimAlmoco: t('alimAlmoco'), alimJantar: t('alimJantar'), alimLanches: t('alimLanches'),
+    circulatorios: v('circulatorios'), circulatoriosQual: t('circulatoriosQual'), cranianos: v('cranianos'), cranianosQual: t('cranianosQual'),
+    emocionais: v('emocionais'), emocionaisQual: t('emocionaisQual'),
+    // Saúde da mulher só aparece para sexo feminino; nos outros casos, mantém o que já estava guardado
+    menarca: f.menarca ? t('menarca') : anterior.menarca || '', menopausa: f.menopausa ? t('menopausa') : anterior.menopausa || '',
+    menstruacao: f.menstruacao ? v('menstruacao') : anterior.menstruacao || '', gestacoes: f.gestacoes ? t('gestacoes') : anterior.gestacoes || '',
+    filhos: f.filhos ? t('filhos') : anterior.filhos || '', abortos: f.abortos ? t('abortos') : anterior.abortos || '',
+    medicamentos: t('medicamentos'),
+  };
+  await salvarRegistro('raq_anamnese|' + chaveFase(id, n), dados);
+  formularioAlterado = false;
+  avisar('Anamnese salva com sucesso.');
+  pilha.pop();
+  if (_sequenciaNovo === id) { ir('formExame', id); return; }
+  desenhar();
+}
+
+// ---------- Exame físico ----------
+let _exEd = null;   // exame em edição: tabelas, marcações e desfazer
+TELAS.formExame = (id) => {
+  const p = pacientes().find((x) => x.id === id); if (!p) { voltar(); return; }
+  const n = faseFicha[id] || faseAtual(p);
+  const e = G.raq_exame[chaveFase(id, n)] || {};
+  formularioAlterado = false;
+  const mc = JSON.parse(JSON.stringify(e.marcadoresCadeia || { frente: [], costas: [] }));
+  _exEd = { id, n, tabelaSlump: { ...(e.tabelaSlump || {}) }, tabelaPlexo: { ...(e.tabelaPlexo || {}) }, mc: { frente: mc.frente || [], costas: mc.costas || [] },
+    desfazerCadeia: [], desfazerDesenho: [], desenho: e.desenhoLivre || '' };
+  const tx = (rotulo, nome, linhas = 3) => campoTexto(rotulo, nome, e[nome], linhas);
+  app.innerHTML = `${topo('Exame físico' + (fases(p).length > 1 ? ' — Fase ' + n : ''))}${faixaDoPaciente(id)}
+    <form class="conteudo" ${formularioVigiado('form-ex', `salvarExameCel('${esc(id)}')`)}>
+      ${cartaoGrupo('Inspeção estática', tx('Vista anterior', 'vistaAnterior', 2) + tx('Vista lateral', 'vistaLateral', 2) + tx('Vista posterior', 'vistaPosterior', 2))}
+      ${cartaoGrupo('Inspeção dinâmica', tx('Inspeção dinâmica', 'inspecaoDinamica') + '<p class="obs" style="margin:0">Obs.: definir padrões de dor no teste de mobilidade global.</p>')}
+      <div class="cartao form-cartao">${tx('Palpação estática', 'palpacaoEstatica')}${tx('Palpação dinâmica e testes osteopáticos', 'palpacaoDinamica')}${tx('Testes ortopédicos', 'testesOrtopedicos')}${tx('Exames complementares', 'examesComplementares')}</div>
+      <p class="grupo">Análise do sistema nervoso</p><div class="cartao" id="corpo-neural-ed">${corpoNeuralEd()}</div>
+      ${cartaoGrupo('Sistema estabilizador', tx('Sistema estabilizador', 'sistemaEstabilizador'))}
+      ${cartaoGrupo('Sistema visceral', tx('Sistema visceral', 'sistemaVisceral'))}
+      ${cartaoGrupo('Crânio', tx('Crânio', 'cranio'))}
+      <p class="grupo">Cadeia lesional</p>
+      <div class="cartao" style="padding:12px 0">
+        <div class="cadeia-figs" id="figs-ed">${figurasEd()}</div>
+        <p class="dica-ampliar">Toque na figura para marcar (ponto, círculo ou seta).</p>
+        <p class="rot-tab">Desenho livre</p>
+        <div style="padding:0 14px"><canvas id="canvas-livre-cel" width="500" height="500" class="canvas-cel"></canvas>
+          <div class="dupla" style="margin-top:8px"><button type="button" class="btn claro" id="btn-desfazer-desenho" onclick="desfazerDesenhoCel()" disabled>↶ Desfazer</button>
+            <button type="button" class="btn claro" onclick="limparDesenhoCel()">Limpar desenho</button></div></div>
+        <div style="padding:12px 14px 0">${tx('Observações', 'cadeiaConclusao', 4)}</div>
+      </div>
+      <button class="btn" type="submit" style="min-height:54px;font-size:17px">Salvar exame físico</button>
+    </form>`;
+  prepararDesenhoCel();
+};
+function corpoNeuralEd() {
+  const cel = (prefixo, ch, i) => { const k = `${prefixo}-${ladoNeural}-${ch}-${i}`; const t = prefixo === 'slump' ? 'tabelaSlump' : 'tabelaPlexo';
+    return `<td><input class="cel-neural" value="${esc(_exEd[t][k] || '')}" maxlength="4" autocomplete="off" oninput="_exEd.${t}['${k}'] = this.value.trim()"></td>`; };
+  const tab = (prefixo, linhas) => `<table class="tab-neural"><thead><tr><th></th>${[1, 2, 3, 4, 5].map((i) => `<th>${i}</th>`).join('')}</tr></thead><tbody>
+    ${linhas.map(([ch, rot]) => `<tr><td class="rot">${esc(rot)}</td>${[1, 2, 3, 4, 5].map((i) => cel(prefixo, ch, i)).join('')}</tr>`).join('')}</tbody></table>`;
+  return `<div style="padding:12px 14px 4px"><div class="seg">
+      <button type="button" class="${ladoNeural === 'd' ? 'ativo' : ''}" onclick="ladoNeural='d'; document.getElementById('corpo-neural-ed').innerHTML = corpoNeuralEd()">Direito (D)</button>
+      <button type="button" class="${ladoNeural === 'e' ? 'ativo' : ''}" onclick="ladoNeural='e'; document.getElementById('corpo-neural-ed').innerHTML = corpoNeuralEd()">Esquerdo (E)</button></div></div>
+    <p class="rot-tab">Slump</p>${tab('slump', LINHAS_SLUMP)}<p class="rot-tab">Plexo braquial</p>${tab('plexo', LINHAS_PLEXO)}`;
+}
+const figurasEd = () => ['frente', 'costas'].map((l) => `<button type="button" class="fig" onclick="editarCadeia('${l}')"><span>${l === 'frente' ? 'Frente' : 'Costas'}</span>${figuraCadeia(l, _exEd.mc[l])}</button>`).join('');
+
+// marcar na figura (tela inteira): mesmas regras do notebook (cadeiaInicio/Movimento/Fim) — toque simples cria ponto
+// ou apaga a marcação perto; arrastar com Círculo define o tamanho; com Seta, de onde começa até onde aponta
+let _ferramenta = 'ponto', _arraste = null;
+function editarCadeia(lado) {
+  const v = document.createElement('div'); v.className = 'veu veu-cheio'; v.id = 'editor-cadeia';
+  v.innerHTML = `<div class="folha folha-cheia folha-doc"><h2>Cadeia lesional — ${lado === 'frente' ? 'Frente' : 'Costas'}</h2>
+    <div class="seg" id="ferramentas">${[['ponto', 'Ponto'], ['circulo', 'Círculo'], ['seta', 'Seta']].map(([f, t]) => `<button type="button" data-f="${f}" class="${_ferramenta === f ? 'ativo' : ''}" onclick="_ferramenta='${f}'; document.querySelectorAll('#ferramentas button').forEach(b => b.classList.toggle('ativo', b.dataset.f === _ferramenta))">${t}</button>`).join('')}</div>
+    <div class="area-cadeia" id="area-cadeia" data-lado="${lado}"></div>
+    <div class="dupla"><button type="button" class="btn claro" id="btn-desfazer-cadeia" onclick="desfazerCadeiaCel()">↶ Desfazer</button><button type="button" class="btn claro" onclick="limparCadeiaCel()">Limpar marcações</button></div>
+    <button class="btn" type="button" style="margin-top:10px" onclick="fecharEditorCadeia()">Pronto</button></div>`;
+  document.body.appendChild(v);
+  desenharEditorCadeia();
+  const area = v.querySelector('#area-cadeia');
+  area.addEventListener('pointerdown', (ev) => { const s = area.querySelector('svg'); const p = posNaFigura(ev, s); _arraste = { lado, s, x0: p.x, y0: p.y, x: p.x, y: p.y, w: p.w, h: p.h }; try { area.setPointerCapture(ev.pointerId); } catch (e) { /* nada */ } ev.preventDefault(); });
+  area.addEventListener('pointermove', (ev) => { if (!_arraste) return; const p = posNaFigura(ev, _arraste.s); _arraste.x = p.x; _arraste.y = p.y; if (_ferramenta !== 'ponto') desenharEditorCadeia(); });
+  const fim = () => { if (_arraste) fimArrasteCadeia(); };
+  area.addEventListener('pointerup', fim); area.addEventListener('pointercancel', fim);
+}
+function posNaFigura(ev, svg) { const r = svg.getBoundingClientRect(); return { x: (ev.clientX - r.left) / r.width * 100, y: (ev.clientY - r.top) / r.height * 100, w: r.width, h: r.height }; }
+function desenharEditorCadeia() {
+  const area = document.getElementById('area-cadeia'); if (!area) return;
+  const lado = area.dataset.lado;
+  const itens = _exEd.mc[lado].slice(), a = _arraste;
+  if (a && _ferramenta !== 'ponto') itens.push(_ferramenta === 'circulo'
+    ? { tipo: 'circulo', x: a.x0, y: a.y0, r: Math.hypot((a.x - a.x0) * a.w / 100, (a.y - a.y0) * a.h / 100) / a.w * 100 }
+    : { tipo: 'seta', x1: a.x0, y1: a.y0, x2: a.x, y2: a.y });
+  area.innerHTML = figuraCadeia(lado, itens);
+  document.getElementById('btn-desfazer-cadeia').disabled = !_exEd.desfazerCadeia.length;
+}
+function marcacaoProxima(lado, p) {   // _marcacaoProxima do notebook (com distância maior, para o dedo)
+  const px = (x, y) => ({ x: x * p.w / 100, y: y * p.h / 100 }); const c = px(p.x, p.y);
+  let melhor = -1, menor = 18;
+  _exEd.mc[lado].forEach((m, i) => {
+    let d; const tipo = m.tipo || 'ponto';
+    if (tipo === 'ponto') { const q = px(m.x, m.y); d = Math.hypot(q.x - c.x, q.y - c.y); }
+    else if (tipo === 'circulo') { const q = px(m.x, m.y); d = Math.abs(Math.hypot(q.x - c.x, q.y - c.y) - m.r * p.w / 100); }
+    else { const a = px(m.x1, m.y1), b = px(m.x2, m.y2); const vx = b.x - a.x, vy = b.y - a.y, l2 = vx * vx + vy * vy || 1;
+      const t = Math.max(0, Math.min(1, ((c.x - a.x) * vx + (c.y - a.y) * vy) / l2)); d = Math.hypot(a.x + t * vx - c.x, a.y + t * vy - c.y); }
+    if (d < menor) { menor = d; melhor = i; }
+  });
+  return melhor;
+}
+function fimArrasteCadeia() {
+  const a = _arraste; _arraste = null;
+  const lista = _exEd.mc[a.lado], antes = JSON.stringify(_exEd.mc);
+  const arrastou = Math.hypot((a.x - a.x0) * a.w / 100, (a.y - a.y0) * a.h / 100);
+  if (arrastou < 8) {
+    const i = marcacaoProxima(a.lado, { x: a.x0, y: a.y0, w: a.w, h: a.h });
+    if (i > -1) lista.splice(i, 1);
+    else if (_ferramenta === 'ponto') lista.push({ x: a.x0, y: a.y0 });
+    else { desenharEditorCadeia(); return; }
+  } else if (_ferramenta === 'circulo') lista.push({ tipo: 'circulo', x: a.x0, y: a.y0, r: arrastou / a.w * 100 });
+  else if (_ferramenta === 'seta') lista.push({ tipo: 'seta', x1: a.x0, y1: a.y0, x2: a.x, y2: a.y });
+  else lista.push({ x: a.x, y: a.y });
+  _exEd.desfazerCadeia.push(antes); formularioAlterado = true;
+  desenharEditorCadeia();
+}
+function desfazerCadeiaCel() { const s = _exEd.desfazerCadeia.pop(); if (s) { _exEd.mc = JSON.parse(s); desenharEditorCadeia(); } }
+async function limparCadeiaCel() {
+  if (!_exEd.mc.frente.length && !_exEd.mc.costas.length) return;
+  if (!(await perguntar('Limpar todas as marcações da imagem?', 'Limpar', 'Cancelar'))) return;
+  _exEd.desfazerCadeia.push(JSON.stringify(_exEd.mc)); _exEd.mc = { frente: [], costas: [] }; formularioAlterado = true; desenharEditorCadeia();
+}
+function fecharEditorCadeia() { const v = document.getElementById('editor-cadeia'); if (v) v.remove(); const f = document.getElementById('figs-ed'); if (f) f.innerHTML = figurasEd(); }
+
+// desenho livre: quadro de 500×500 como no notebook, traço vermelho
+function prepararDesenhoCel() {
+  const c = document.getElementById('canvas-livre-cel'); if (!c) return;
+  const ctx = c.getContext('2d');
+  if (_exEd.desenho) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0, c.width, c.height); img.src = _exEd.desenho; }
+  let desenhando = false;
+  const pos = (ev) => { const r = c.getBoundingClientRect(); return { x: (ev.clientX - r.left) * c.width / r.width, y: (ev.clientY - r.top) * c.height / r.height }; };
+  c.addEventListener('pointerdown', (ev) => {
+    ev.preventDefault(); desenhando = true;
+    _exEd.desfazerDesenho.push(ctx.getImageData(0, 0, c.width, c.height)); if (_exEd.desfazerDesenho.length > 50) _exEd.desfazerDesenho.shift();
+    document.getElementById('btn-desfazer-desenho').disabled = false;
+    const p = pos(ev); ctx.beginPath(); ctx.moveTo(p.x, p.y);
+    try { c.setPointerCapture(ev.pointerId); } catch (e) { /* nada */ }
+  });
+  c.addEventListener('pointermove', (ev) => {
+    if (!desenhando) return; ev.preventDefault();
+    const p = pos(ev); ctx.lineTo(p.x, p.y); ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+    _exEd.desenhou = true; formularioAlterado = true;
+  });
+  const parar = () => { desenhando = false; };
+  c.addEventListener('pointerup', parar); c.addEventListener('pointercancel', parar);
+}
+function desfazerDesenhoCel() {
+  const c = document.getElementById('canvas-livre-cel'); const s = _exEd.desfazerDesenho.pop();
+  if (s) { c.getContext('2d').putImageData(s, 0, 0); _exEd.desenhou = true; formularioAlterado = true; }
+  document.getElementById('btn-desfazer-desenho').disabled = !_exEd.desfazerDesenho.length;
+}
+function limparDesenhoCel() {
+  const c = document.getElementById('canvas-livre-cel'); const ctx = c.getContext('2d');
+  _exEd.desfazerDesenho.push(ctx.getImageData(0, 0, c.width, c.height)); document.getElementById('btn-desfazer-desenho').disabled = false;
+  ctx.clearRect(0, 0, c.width, c.height); _exEd.desenhou = true; formularioAlterado = true;
+}
+async function salvarExameCel(id) {
+  const f = document.getElementById('form-ex');
+  const t = (k) => f[k].value.trim();
+  const anterior = G.raq_exame[chaveFase(id, _exEd.n)] || {};
+  const dados = {
+    vistaAnterior: t('vistaAnterior'), vistaLateral: t('vistaLateral'), vistaPosterior: t('vistaPosterior'), inspecaoDinamica: t('inspecaoDinamica'),
+    palpacaoEstatica: t('palpacaoEstatica'), palpacaoDinamica: t('palpacaoDinamica'), testesOrtopedicos: t('testesOrtopedicos'), examesComplementares: t('examesComplementares'),
+    sistemaEstabilizador: t('sistemaEstabilizador'), sistemaVisceral: t('sistemaVisceral'), cranio: t('cranio'), cadeiaConclusao: t('cadeiaConclusao'),
+    tabelaSlump: _exEd.tabelaSlump, tabelaPlexo: _exEd.tabelaPlexo, marcadoresCadeia: _exEd.mc,
+    // desenho: só troca se mexeu no quadro (senão fica o que já estava, igualzinho)
+    desenhoLivre: _exEd.desenhou ? document.getElementById('canvas-livre-cel').toDataURL('image/png') : (anterior.desenhoLivre || document.getElementById('canvas-livre-cel').toDataURL('image/png')),
+  };
+  await salvarRegistro('raq_exame|' + chaveFase(id, _exEd.n), dados);
+  formularioAlterado = false;
+  avisar('Exame físico salvo com sucesso.');
+  pilha.pop();
+  if (_sequenciaNovo === id) { _sequenciaNovo = null; ir('formConsulta', null, id, null); return; }
+  desenhar();
+}
+
 // ---------- Agenda geral (consulta) — filtros iguais ao notebook (renderizarListaAgendamentos) ----------
 let filtroAg = { busca: '', periodo: 'hoje', ini: '', fim: '', status: 'todos', desc: false };
 const OPCOES_STATUS = [['todos', 'Todos os status'], ['', 'Aguardando confirmação'], ['Confirmada', 'Confirmada'], ['Concluída', 'Concluída'], ['Cancelada', 'Cancelada']];
 let _esperaBusca = null;
-function buscarDepois(fn) { clearTimeout(_esperaBusca); _esperaBusca = setTimeout(fn, 500); }
+// busca enquanto digita (meio segundo depois de parar); se a pessoa já saiu da tela, não faz nada
+function buscarDepois(fn) { clearTimeout(_esperaBusca); const tela = pilha[pilha.length - 1]; _esperaBusca = setTimeout(() => { if (pilha[pilha.length - 1] === tela && document.getElementById('titulo-lista')) fn(); }, 500); }
 function lerFiltroAg() {
   const v = (id) => { const el = document.getElementById(id); return el ? el.value : undefined; };
   const p = v('f-periodo'); const mudouPeriodo = p !== undefined && p !== filtroAg.periodo;
@@ -931,6 +1269,7 @@ function lerFiltroAg() {
 TELAS.agenda = () => {
   app.innerHTML = `${topo('Agenda')}
     <div class="conteudo">
+      <button class="btn" onclick="ir('formAgendamento', null, null)">${ICONE.mais}Cadastrar agendamento</button>
       <label class="campo campo-filtro">Buscar paciente<input type="search" id="f-busca" placeholder="Nome do paciente..." value="${esc(filtroAg.busca)}" oninput="filtroAg.busca=this.value; buscarDepois(listarAgenda)"></label>
       ${camposPeriodo(filtroAg, 'lerFiltroAg()')}
       ${campoSelect('Status', 'f-status', OPCOES_STATUS, filtroAg.status, 'lerFiltroAg()')}
@@ -956,7 +1295,7 @@ function listarAgenda() {
 }
 function linhaAgendamento(a) {
   const det = [a.duracao ? a.duracao + ' min' : '60 min', a.local || ''].filter(Boolean).join(' · ');
-  return `<button class="linha-ag" onclick="${a.pacienteId ? `ir('ficha','${esc(a.pacienteId)}')` : `verAgendamento('${esc(a.id)}')`}">
+  return `<button class="linha-ag" onclick="ir('formAgendamento','${esc(a.id)}')">
     <span class="hora">${esc(a.horario || '—')}</span>
     <span class="nome">${esc(nomeDoRegistro(a))}${marcaAvulso(a)}<span class="det">${esc(det)}</span></span>${etiquetaStatus(a.status)}</button>`;
 }
@@ -974,8 +1313,9 @@ TELAS.agendaFicha = (id) => {
   app.innerHTML = `${topo('Agenda')}
     <div class="faixa-pac"><p><b>${esc(p.nome || '')}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}</p></div>
     <div class="conteudo">
+      <button class="btn" onclick="ir('formAgendamento', null, '${esc(id)}')">${ICONE.mais}Novo agendamento</button>
       <button class="ordem ordem-data" onclick="agendaFichaDesc=!agendaFichaDesc; desenhar()">${agendaFichaDesc ? 'Data ▼ mais recentes' : 'Data ▲ mais antigas'}</button>
-      ${lista.length ? `<section class="cartao">${lista.map((a) => `<button class="linha-ag" onclick="verAgendamento('${esc(a.id)}')"><span class="data-ag">${esc(dataBR(a.data))}<small>${esc(a.horario || '')}</small></span>
+      ${lista.length ? `<section class="cartao">${lista.map((a) => `<button class="linha-ag" onclick="ir('formAgendamento','${esc(a.id)}')"><span class="data-ag">${esc(dataBR(a.data))}<small>${esc(a.horario || '')}</small></span>
           <span class="nome">${esc(a.local || '—')}<span class="det">${esc((a.duracao || 60) + ' min')}</span></span>${etiquetaStatus(a.status)}</button>`).join('')}</section>`
         : '<p class="vazio">Nenhum agendamento para este paciente ainda.</p>'}
     </div>`;
@@ -994,6 +1334,7 @@ function lerFiltroFin() {
 TELAS.financeiro = () => {
   app.innerHTML = `${topo('Financeiro')}
     <div class="conteudo">
+      <button class="btn" onclick="ir('formFinanceiro', null, null)">${ICONE.mais}Cadastrar lançamento</button>
       <label class="campo campo-filtro">Buscar paciente<input type="search" id="f-busca" placeholder="Nome do paciente..." value="${esc(filtroFin.busca)}" oninput="filtroFin.busca=this.value; buscarDepois(listarFinanceiro)"></label>
       ${camposPeriodo(filtroFin, 'lerFiltroFin()')}
       <div class="dupla">${campoSelect('Pagamento', 'f-pag', OPCOES_PAGAMENTO, filtroFin.pagamento, 'lerFiltroFin()')}${campoSelect('Nota fiscal', 'f-nota', OPCOES_NOTA, filtroFin.nota, 'lerFiltroFin()')}</div>
@@ -1031,7 +1372,7 @@ function listarFinanceiro() {
   if (!lista.length) caixa.insertAdjacentHTML('afterend', '<p class="vazio" id="fin-vazio">Nenhum lançamento encontrado para os filtros selecionados.</p>');
 }
 function linhaLancamento(f, comNome) {
-  return `<div class="item-pac"><button class="abrir" onclick="verLancamento('${esc(f.id)}')">
+  return `<div class="item-pac"><button class="abrir" onclick="ir('formFinanceiro','${esc(f.id)}')">
       ${comNome ? `<span class="n">${esc(nomeDoRegistro(f))}${marcaAvulso(f)}</span>` : ''}
       <span class="${comNome ? 'd' : 'n'}">${esc(dataBR(f.data))} · ${esc(f.valor || '—')}</span></button>
     ${etiquetaPag(f)}<button class="olho" aria-label="Visualizar" onclick="verLancamento('${esc(f.id)}')">${ICONE.olho}</button></div>`;
@@ -1056,6 +1397,7 @@ TELAS.financeiroFicha = (id) => {
   app.innerHTML = `${topo('Financeiro')}
     <div class="faixa-pac"><p><b>${esc(p.nome || '')}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}</p></div>
     <div class="conteudo">
+      <button class="btn" onclick="ir('formFinanceiro', null, '${esc(id)}')">${ICONE.mais}Novo lançamento</button>
       ${lista.length ? `<div class="totais">${totaisHtml(lista, 'todos')}</div>` : ''}
       <button class="ordem ordem-data" onclick="finFichaDesc=!finFichaDesc; desenhar()">${finFichaDesc ? 'Data ▼ mais recentes' : 'Data ▲ mais antigas'}</button>
       ${lista.length ? `<div class="cartao">${lista.map((f) => linhaLancamento(f, false)).join('')}</div>` : '<p class="vazio">Nenhum lançamento para este paciente ainda.</p>'}
@@ -1070,13 +1412,71 @@ function tipoArquivo(a) { return a.htmlDoc ? 'documento' : a.tipo === 'applicati
 const ICONE_ARQ = {
   imagem: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d7a6d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><circle cx="8.5" cy="9.5" r="1.7"/><path d="M21 16l-6-6-9 9"/></svg>',
   doc: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d7a6d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>',
+  camera: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  galeria: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><circle cx="8.5" cy="9.5" r="1.7"/><path d="M21 16l-6-6-9 9"/></svg>',
 };
+// ---------- anexar no celular (como o adicionarArquivoPaciente do notebook) ----------
+// Foto: reduzida no aparelho (até 1600 pontos, JPEG 0,85 — igual ao notebook). O conteúdo vai criptografado
+// para o Drive antes do registro; sem internet fica guardado (criptografado) no celular e vai depois.
+function lerComoDataUrl(file) { return new Promise((ok, erro) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = erro; r.readAsDataURL(file); }); }
+async function reduzirImagem(file) {
+  const url = await lerComoDataUrl(file);
+  const img = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = erro; i.src = url; });
+  let w = img.naturalWidth, h = img.naturalHeight; const limite = 1600;
+  if (w > limite || h > limite) { const e = limite / Math.max(w, h); w = Math.round(w * e); h = Math.round(h * e); }
+  const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', 0.85);
+}
+const semExtensao = (n) => String(n || '').replace(/\.[^.]+$/, '');
+let _escolhidos = [];
+function arquivosEscolhidos(pid, input, origem) {
+  const arquivos = [...input.files]; input.value = '';
+  if (!arquivos.length) return;
+  const agora = new Date(), carimbo = `${dataBR(hojeISO())} ${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+  _escolhidos = arquivos;
+  abrirFolha(`<h2>${arquivos.length > 1 ? 'Nomes dos arquivos' : 'Nome do arquivo'}</h2>
+    <form id="form-arq" onsubmit="event.preventDefault(); salvarAnexosCel('${esc(pid)}')" style="display:flex;flex-direction:column;gap:12px">
+      ${arquivos.map((f, i) => `<label class="campo campo-form">${arquivos.length > 1 ? `Arquivo ${i + 1}` : 'Nome'}<input type="text" name="n${i}" value="${esc(origem === 'arquivo' ? semExtensao(f.name) : (origem === 'foto' ? 'Foto ' + carimbo : semExtensao(f.name) || 'Foto ' + carimbo))}" placeholder="ex.: raio-X, ressonância..." autocomplete="off"></label>`).join('')}
+      <button class="btn" type="submit">Salvar</button></form>`, 'Cancelar');
+}
+async function salvarAnexosCel(pid) {
+  const f = document.getElementById('form-arq');
+  const nomes = _escolhidos.map((_, i) => f['n' + i].value.trim());
+  if (nomes.some((n) => !n)) { avisar('Dê um nome ao arquivo (ex.: raio-X, ressonância...).'); return; }
+  const grandes = _escolhidos.filter((x) => !x.type.startsWith('image/') && x.size > 3 * 1024 * 1024);
+  if (grandes.length && !(await perguntar(`Esse arquivo tem ${tamanhoArquivo(grandes[0].size)}. Arquivos grandes demoram para enviar e ocupam espaço no Google Drive.\n\nDeseja enviar mesmo assim?`, 'Enviar mesmo assim', 'Cancelar'))) return;
+  f.closest('.veu').remove();
+  avisar(_escolhidos.length > 1 ? 'Guardando os arquivos...' : 'Guardando o arquivo...');
+  try {
+    for (let i = 0; i < _escolhidos.length; i++) {
+      const file = _escolhidos[i];
+      const ehImagem = file.type.startsWith('image/');
+      const dados = ehImagem ? await reduzirImagem(file) : await lerComoDataUrl(file);
+      const id = 'arq_' + Date.now() + (i ? '_' + i : '');
+      await A.gravarTexto(chave, `anexo_${id}_dados`, dados);
+      estado.anexosPendentes = (estado.anexosPendentes || []).concat([{ id, campo: 'dados' }]);
+      await salvarRegistro('raq_arquivos_pacientes|' + id, { id, nome: nomes[i], tipo: ehImagem ? 'image/jpeg' : (file.type || 'application/octet-stream'),
+        nomeOriginal: file.name || (nomes[i] + '.jpg'), dataUpload: new Date().toISOString(), tamanho: Math.round(dados.length * 0.75), dados: N.MARCA_ANEXO, [N.CAMPO_PID]: pid });
+    }
+    avisar(_escolhidos.length > 1 ? 'Arquivos enviados com sucesso.' : 'Arquivo enviado com sucesso.');
+  } catch (e) { avisar('Não foi possível guardar o arquivo. Tente de novo.'); }
+  _escolhidos = [];
+  desenhar();
+}
 TELAS.arquivos = (id) => {
   const p = pacientes().find((x) => x.id === id) || {};
   const lista = ((G.raq_arquivos_pacientes || {})[id] || []).slice().sort((a, b) => String(b.dataUpload || '').localeCompare(String(a.dataUpload || '')));
   app.innerHTML = `${topo('Arquivos anexados')}
     <div class="faixa-pac"><p><b>${esc(p.nome || '')}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}</p></div>
     <div class="conteudo">
+      <div class="botoes-arq">
+        <button class="btn" onclick="document.getElementById('arq-camera').click()">${ICONE_ARQ.camera}Fotografar</button>
+        <button class="btn medio" onclick="document.getElementById('arq-galeria').click()">${ICONE_ARQ.galeria}Galeria</button>
+        <button class="btn claro" onclick="document.getElementById('arq-arquivo').click()">${ICONE.mais}Arquivo</button>
+      </div>
+      <input type="file" id="arq-camera" accept="image/*" capture="environment" hidden onchange="arquivosEscolhidos('${esc(id)}', this, 'foto')">
+      <input type="file" id="arq-galeria" accept="image/*" multiple hidden onchange="arquivosEscolhidos('${esc(id)}', this, 'galeria')">
+      <input type="file" id="arq-arquivo" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*,application/pdf" hidden onchange="arquivosEscolhidos('${esc(id)}', this, 'arquivo')">
       ${lista.length ? `<div class="cartao">${lista.map((a) => `<div class="item-pac"><span style="flex:none">${tipoArquivo(a) === 'imagem' ? ICONE_ARQ.imagem : ICONE_ARQ.doc}</span>
           <button class="abrir" onclick="abrirArquivo('${esc(id)}','${esc(a.id)}')"><span class="n">${esc(a.nome || a.nomeOriginal || 'Arquivo')}</span>
           <span class="d">${esc([a.dataUpload ? new Date(a.dataUpload).toLocaleDateString('pt-BR') : '', tamanhoArquivo(a.tamanho)].filter(Boolean).join(' · '))}</span></button>
@@ -1101,14 +1501,55 @@ async function recursosDocumentos() {
   return _recDocs;
 }
 // igual ao _montarDocumentoHtmlCompleto do notebook
-function montarDocumentoCompleto(compacto, titulo, rec, zoom) {
+function montarDocumentoCompleto(compacto, titulo, rec) {
   const corpo = String(compacto).replace(/\{\{B64:([A-Z_0-9]+)\}\}/g, (m, n) => (rec.imagens || {})[n] || '');
   return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(titulo)}</title><style>${rec.css || ''}
-html,body{margin:0; padding:0; background:#6f7f7b;}
-html{zoom:${zoom}}
+html,body{margin:0; padding:0; background:#6f7f7b; overflow:hidden;}
 .folha-impressao{display:block !important; position:relative !important; left:auto !important; top:auto !important; margin:14px auto !important; box-shadow:0 2px 12px rgba(0,0,0,.35);}
 </style></head><body>${corpo}</body></html>`;
 }
+// Mostra o documento na tela inteira: a folha é montada no tamanho real (como no notebook, sem mudar a
+// distribuição do texto) e encolhida para caber na largura; dois dedos ou − / + ampliam (até 4 vezes).
+const DOC_L = 830, DOC_FOLHA = 1123 + 14;   // largura da página (A4 + margem) e altura de cada folha
+let _zoomDoc = null;
+function verDocumento(html, titulo, folhas) {
+  const v = document.createElement('div'); v.className = 'veu veu-cheio';
+  const altura = folhas * DOC_FOLHA + 14;
+  v.innerHTML = `<div class="folha folha-cheia folha-doc"><h2>${esc(titulo)}</h2>
+    <div class="zoom-doc"><button type="button" aria-label="Diminuir" onclick="zoomDocBotao(-1)">−</button><span id="zoom-doc-txt">100%</span><button type="button" aria-label="Aumentar" onclick="zoomDocBotao(1)">+</button></div>
+    <div class="visor-doc" id="visor-doc"><div class="visor-escala" id="visor-escala"><iframe sandbox="" scrolling="no" style="width:${DOC_L}px;height:${altura}px" srcdoc="${esc(html)}"></iframe></div></div>
+    <button class="btn claro" style="margin-top:12px" onclick="this.closest('.veu').remove()">Fechar</button></div>`;
+  document.body.appendChild(v);
+  const visor = v.querySelector('#visor-doc');
+  const base = visor.clientWidth / DOC_L;   // 100% = folha inteira na largura da tela
+  _zoomDoc = { z: 1, base, altura, visor };
+  aplicarZoomDoc(1, 0, 0);
+  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  let pinca = null;
+  visor.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 2) return;
+    const r = visor.getBoundingClientRect();
+    pinca = { d: dist(e.touches), z: _zoomDoc.z, cx: (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left, cy: (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top };
+    e.preventDefault();
+  }, { passive: false });
+  visor.addEventListener('touchmove', (e) => { if (pinca && e.touches.length === 2) { e.preventDefault(); aplicarZoomDoc(pinca.z * dist(e.touches) / pinca.d, pinca.cx, pinca.cy); } }, { passive: false });
+  visor.addEventListener('touchend', (e) => { if (e.touches.length < 2) pinca = null; });
+  visor.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+  visor.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+}
+function aplicarZoomDoc(z, cx, cy) {
+  const d = _zoomDoc; if (!d) return;
+  const visor = d.visor, esc_ = document.getElementById('visor-escala');
+  z = Math.min(4, Math.max(1, z));
+  const fx = (visor.scrollLeft + cx) / (visor.scrollWidth || 1), fy = (visor.scrollTop + cy) / (visor.scrollHeight || 1);
+  d.z = z;
+  const s = d.base * z;
+  esc_.style.width = Math.round(DOC_L * s) + 'px'; esc_.style.height = Math.round(d.altura * s) + 'px';
+  esc_.querySelector('iframe').style.transform = `scale(${s})`;
+  visor.scrollLeft = fx * visor.scrollWidth - cx; visor.scrollTop = fy * visor.scrollHeight - cy;
+  document.getElementById('zoom-doc-txt').textContent = Math.round(z * 100) + '%';
+}
+function zoomDocBotao(passo) { const v = _zoomDoc && _zoomDoc.visor; if (v) aplicarZoomDoc(_zoomDoc.z + passo * 0.5, v.clientWidth / 2, v.clientHeight / 2); }
 function dataUrlParaBlob(d) {
   const m = /^data:([^;,]*)(;base64)?,(.*)$/s.exec(d || ''); if (!m) return null;
   const bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
@@ -1119,6 +1560,7 @@ async function abrirArquivo(pid, aid) {
   const tipo = tipoArquivo(a);
   const campo = tipo === 'documento' ? 'htmlDoc' : 'dados';
   let conteudo = a[campo] && a[campo] !== '@cofre' ? a[campo] : null;
+  if (!conteudo) conteudo = await A.lerTexto(chave, `anexo_${a.id}_${campo}`).catch(() => null);   // anexado neste celular, ainda não enviado
   if (!conteudo) {
     if (!D.temPasse()) { try { await D.entrar(); } catch (e) { if (e.message !== 'CANCELADO') avisar(e.message); return; } }
     avisar('Abrindo o arquivo...');
@@ -1131,8 +1573,7 @@ async function abrirArquivo(pid, aid) {
   if (tipo === 'documento') {
     const rec = await recursosDocumentos();
     if (!rec) { avisar('A aparência dos documentos ainda não chegou do notebook. Abra o SGO_RA no notebook com internet e tente de novo.'); return; }
-    const zoom = Math.min(1, (window.innerWidth - 48) / 830).toFixed(3);
-    ampliar(`<iframe class="doc-avulso" sandbox="" srcdoc="${esc(montarDocumentoCompleto(conteudo, nome, rec, zoom))}"></iframe>`, nome); return;
+    verDocumento(montarDocumentoCompleto(conteudo, nome, rec), nome, (String(conteudo).match(/class="folha-impressao/g) || []).length || 1); return;
   }
   // PDF, Word, Excel...: o próprio celular abre (menu de compartilhar → abrir no app certo)
   const blob = dataUrlParaBlob(conteudo); if (!blob) { avisar('Não foi possível abrir o arquivo.'); return; }
@@ -1153,8 +1594,9 @@ TELAS.consultas = (id) => {
     .sort((a, b) => consultasDesc ? String(b.data).localeCompare(String(a.data)) : String(a.data).localeCompare(String(b.data)));
   app.innerHTML = `${topo('Consultas' + (fases(p).length > 1 ? ' — Fase ' + n : ''))}
     <div class="conteudo">
+      <button class="btn" onclick="ir('formConsulta', null, '${esc(id)}', null)">${ICONE.mais}Cadastrar consulta</button>
       <button class="ordem ordem-data" onclick="consultasDesc=!consultasDesc; desenhar()">${consultasDesc ? 'Data ▼ mais recentes' : 'Data ▲ mais antigas'}</button>
-      ${lista.length ? lista.map((c) => `<div class="cartao consulta"><div class="t"><b>${esc(dataBR(c.data))}</b><button class="olho" style="width:36px;height:36px" aria-label="Visualizar" onclick="verConsulta('${esc(c.id)}')">${ICONE.olho}</button></div>
+      ${lista.length ? lista.map((c) => `<div class="cartao consulta" role="button" style="cursor:pointer" onclick="ir('formConsulta','${esc(c.id)}','${esc(id)}', null)"><div class="t"><b>${esc(dataBR(c.data))}</b><button class="olho" style="width:36px;height:36px" aria-label="Visualizar" onclick="event.stopPropagation(); verConsulta('${esc(c.id)}')">${ICONE.olho}</button></div>
           ${c.tratamento ? `<div class="x"><i>Tratamento:</i> ${esc(c.tratamento)}</div>` : ''}${c.evolucao ? `<div class="x"><i>Evolução:</i> ${esc(c.evolucao)}</div>` : ''}</div>`).join('')
         : '<p class="vazio">Nenhuma consulta.</p>'}
     </div>`;
@@ -1164,6 +1606,327 @@ function verConsulta(id) {
   abrirFolha(`<h2>Consulta de ${esc(dataBR(c.data))}</h2><div class="cartao" style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
     ${[['Tratamento', c.tratamento], ['Evolução', c.evolucao], ['Observações', c.observacoes]].map(([r, v]) => `<div class="consulta" style="padding:0"><div class="x"><i>${r}:</i></div><div class="x">${esc(v || '—')}</div></div>`).join('')}</div>`);
 }
+
+// ====================== lançar e editar: agendamento, consulta, lançamento financeiro ======================
+// Campos, opções, perguntas e textos copiados do notebook (abrirFormAgendamento/salvarAgendamento,
+// abrirFormConsulta/salvarConsulta, abrirFormFinanceiro/salvarFinanceiro, perguntarLancamentosDoAgendamento).
+const minutos = (h) => { const m = /^(\d{1,2}):(\d{2})/.exec(h || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+function conflitoNaAgenda(data, horario, duracao, ignorarId) {
+  const ini = minutos(horario); if (ini === null) return null;
+  const fim = ini + (Number(duracao) || 60);
+  return G.raq_agendamentos.find((a) => {
+    if (a.id === ignorarId || a.data !== data || a.status === 'Cancelada') return false;
+    const i2 = minutos(a.horario);
+    return i2 !== null && ini < i2 + (Number(a.duracao) || 60) && i2 < fim;
+  }) || null;
+}
+const pacientesParaEscolher = () => pacientes().filter((p) => situacao(p) !== 'excluido').sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
+// bloco "Paciente": nome fixo, ou lista de pacientes + "Paciente ainda não cadastrado no sistema"
+function blocoPaciente(pidFixo, avulso, nomeAvulso, pidAtual) {
+  if (pidFixo && !avulso) return `<p class="pac-fixo">Paciente: ${esc(nomePaciente(pidFixo))}</p>`;
+  return `<label class="marcar"><input type="checkbox" name="avulso" ${avulso ? 'checked' : ''} onchange="alternarAvulsoForm(this.form)">Paciente ainda não cadastrado no sistema</label>
+    <label class="campo campo-form" id="grp-pac-sel"${avulso ? ' style="display:none"' : ''}>Paciente<select name="pacienteId"><option value="">Selecione</option>
+      ${pacientesParaEscolher().map((p) => `<option value="${esc(p.id)}" ${p.id === pidAtual ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}</select></label>
+    <label class="campo campo-form" id="grp-pac-avulso"${avulso ? '' : ' style="display:none"'}>Nome do paciente (ainda não cadastrado)<input type="text" name="pacienteNomeAvulso" value="${esc(nomeAvulso || '')}" placeholder="Nome completo" autocapitalize="words" autocomplete="off"></label>`;
+}
+function alternarAvulsoForm(f) {
+  const av = f.avulso.checked;
+  document.getElementById('grp-pac-sel').style.display = av ? 'none' : '';
+  document.getElementById('grp-pac-avulso').style.display = av ? '' : 'none';
+}
+function lerPacienteForm(f, pidFixo) {
+  const avulso = !!(f.avulso && f.avulso.checked);
+  const pacienteId = avulso ? null : (pidFixo || (f.pacienteId ? f.pacienteId.value : ''));
+  const nome = avulso ? f.pacienteNomeAvulso.value.trim() : '';
+  if (avulso && !nome) { avisar('Digite o nome do paciente avulso antes de salvar.'); f.pacienteNomeAvulso.focus(); return null; }
+  if (!avulso && !pacienteId) { avisar('Selecione um paciente antes de salvar.'); return null; }
+  return { avulso, pacienteId, pacienteNomeAvulso: nome };
+}
+const faixaDoPaciente = (pid) => { const p = pid && pacientes().find((x) => x.id === pid); return p ? `<div class="faixa-pac"><p><b>${esc(p.nome)}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}</p></div>` : ''; };
+function botaoExcluir(funcao) { return `<button class="btn perigo" type="button" onclick="${funcao}">Excluir</button>`; }
+async function excluirComPergunta(k, texto, aviso) {
+  if (!(await perguntar(texto, 'Excluir', 'Cancelar'))) return;
+  await excluirRegistro(k);
+  formularioAlterado = false;
+  avisar(aviso);
+  pilha.pop(); desenhar();
+}
+const formularioVigiado = (id, enviar) => `id="${id}" onsubmit="event.preventDefault(); ${enviar}" oninput="formularioAlterado=true" onchange="formularioAlterado=true"`;
+
+// ---------- Agendamento ----------
+TELAS.formAgendamento = (id, pidFixo) => {
+  const a = id ? G.raq_agendamentos.find((x) => x.id === id) : { data: hojeISO(), duracao: 60, local: 'Consultório', status: '' };
+  if (!a) { voltar(); return; }
+  formularioAlterado = false;
+  const fixo = id ? a.pacienteId : pidFixo;
+  const args = `${id ? `'${esc(id)}'` : 'null'}, ${pidFixo ? `'${esc(pidFixo)}'` : 'null'}`;
+  app.innerHTML = `${topo(id ? 'Editar agendamento' : 'Novo agendamento')}${faixaDoPaciente(fixo)}
+    <form class="conteudo" ${formularioVigiado('form-ag', `salvarAgendamentoCel(${args})`)}>
+      <div class="cartao form-cartao">
+        ${fixo ? '' : blocoPaciente(null, id ? !a.pacienteId : false, a.pacienteNomeAvulso, a.pacienteId)}
+        ${campoData('Data da consulta', 'data', a.data)}
+        ${campoHora('Horário', 'horario', a.horario)}
+        ${selectPares('Duração', 'duracao', String(a.duracao || 60), [['60', '60 min'], ['90', '90 min']])}
+        ${selectPares('Local de atendimento', 'local', a.local || 'Consultório', [['Consultório', 'Consultório'], ['Externo', 'Externo']], 'onchange="document.getElementById(\'grp-endereco\').style.display = this.value===\'Externo\' ? \'\' : \'none\'"')}
+        <label class="campo campo-form" id="grp-endereco"${a.local === 'Externo' ? '' : ' style="display:none"'}>Endereço do atendimento<input type="text" name="endereco" value="${esc(a.endereco || '')}"></label>
+        ${selectPares('Status', 'status', a.status === 'Aguardando confirmação' ? '' : (a.status || ''), [['', 'Selecione'], ['Confirmada', 'Confirmada'], ['Cancelada', 'Cancelada'], ['Concluída', 'Concluída']])}
+      </div>
+      <button class="btn" type="submit" style="min-height:54px;font-size:17px">Salvar</button>
+      ${id ? botaoExcluir(`excluirComPergunta('raq_agendamentos|${esc(id)}', 'Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita.', 'Agendamento excluído.')`) : ''}
+    </form>`;
+};
+async function salvarAgendamentoCel(id, pidFixo) {
+  const f = document.getElementById('form-ag');
+  const anterior = id ? G.raq_agendamentos.find((x) => x.id === id) : null;
+  const pac = (id ? anterior.pacienteId : pidFixo) ? { avulso: false, pacienteId: id ? anterior.pacienteId : pidFixo, pacienteNomeAvulso: '' } : lerPacienteForm(f, null);
+  if (!pac) return;
+  const datas = lerDatas(f, [['data', 'Data da consulta', true]]); if (!datas) return;
+  const horario = f.horario.value.trim();
+  if (!horaValida(horario)) { avisar('Horário: digite hh:mm (ex.: 09:30).'); f.horario.focus(); return; }
+  const dados = {
+    id: id || ('ag_' + Date.now()), pacienteId: pac.pacienteId, pacienteNomeAvulso: pac.pacienteNomeAvulso,
+    data: datas.data, horario, duracao: Number(f.duracao.value) || 60, local: f.local.value,
+    endereco: f.local.value === 'Externo' ? f.endereco.value.trim() : '', status: f.status.value,
+    consultaGeradaId: anterior ? anterior.consultaGeradaId || null : null, financeiroGeradoId: anterior ? anterior.financeiroGeradoId || null : null,
+  };
+  // horário já ocupado: só quando é novo ou mudou data, horário ou duração (mudar só o status não pergunta)
+  const mudouHorario = !anterior || anterior.data !== dados.data || anterior.horario !== dados.horario || (Number(anterior.duracao) || 60) !== dados.duracao;
+  const c = dados.status !== 'Cancelada' && mudouHorario ? conflitoNaAgenda(dados.data, dados.horario, dados.duracao, dados.id) : null;
+  if (c) {
+    const nomeOcupado = c.pacienteId ? nomePaciente(c.pacienteId) : `${c.pacienteNomeAvulso || '—'} (não cadastrado)`;
+    if (!(await perguntar(`Este horário já está ocupado:\n\n${nomeOcupado} — ${dataBR(c.data)}, ${c.horario} (${Number(c.duracao) || 60} min)\n\nDeseja agendar assim mesmo?`, 'Agendar assim mesmo', 'Voltar'))) return;
+  }
+  await salvarRegistro('raq_agendamentos|' + dados.id, dados);
+  formularioAlterado = false;
+  avisar('Agendamento salvo com sucesso.');
+  pilha.pop();
+  if (!(await perguntarLancamentosDoAgendamentoCel(dados.id, anterior ? anterior.status : null))) desenhar();
+}
+// agendamento que acabou de virar "Concluída": duas perguntas; cria só o que tiver "Sim" e abre para preencher
+async function perguntarLancamentosDoAgendamentoCel(agId, statusAnterior) {
+  const ag = G.raq_agendamentos.find((x) => x.id === agId);
+  if (!ag || ag.status !== 'Concluída' || statusAnterior === 'Concluída') return false;
+  if (ag.consultaGeradaId || ag.financeiroGeradoId) return false;   // já gerado antes, evita duplicar
+  if (!ag.pacienteId) return perguntarCadastroDoAvulsoCel(ag);
+  const querConsulta = await perguntar('Agendamento concluído.\n\nDeseja fazer o lançamento da consulta?', 'Sim', 'Não');
+  const querFinanceiro = await perguntar('Deseja fazer o lançamento financeiro?', 'Sim', 'Não');
+  let consultaId = null, financeiroId = null;
+  if (querConsulta) {
+    const p = pacientes().find((x) => x.id === ag.pacienteId);
+    consultaId = 'cons_' + Date.now();
+    await salvarRegistro('raq_consultas|' + consultaId, { id: consultaId, pacienteId: ag.pacienteId, fase: faseAtual(p), agendamentoId: ag.id, data: ag.data, tratamento: '', evolucao: '', observacoes: '' });
+  }
+  if (querFinanceiro) financeiroId = await criarLancamentoFinanceiro(ag.pacienteId, ag.data, ag.id, consultaId);
+  if (consultaId || financeiroId) await salvarRegistro('raq_agendamentos|' + ag.id, { ...ag, consultaGeradaId: consultaId, financeiroGeradoId: financeiroId });
+  if (consultaId) { ir('formConsulta', consultaId, ag.pacienteId, financeiroId); return true; }
+  if (financeiroId) { ir('formFinanceiro', financeiroId, null); return true; }
+  return false;
+}
+// cria um lançamento em branco ligado à consulta/agendamento e devolve o id (_criarLancamentoFinanceiro)
+async function criarLancamentoFinanceiro(pacienteId, data, agendamentoId, consultaId, nomeAvulso) {
+  const id = 'fin_' + Date.now();
+  await salvarRegistro('raq_financeiro|' + id, { id, pacienteId: pacienteId || null, agendamentoId: agendamentoId || null, consultaId: consultaId || null, data,
+    pagamento: 'Não', dataPagamento: '', valor: '', tipoPagamento: '', notaFiscal: 'Não', notaNumero: '', notaData: '', observacoes: '', ...(nomeAvulso ? { pacienteNomeAvulso: nomeAvulso } : {}) });
+  return id;
+}
+// paciente não cadastrado: oferece o cadastro; se não, oferece o lançamento financeiro avulso
+let _cadastroAvulsoRecusado = null;
+async function oferecerCadastroDoAvulso(nome, vinculo) {
+  nome = (nome || '').trim();
+  if (!(await perguntar(`Este paciente ainda não foi cadastrado. Deseja cadastrá-lo?${nome ? '\n\n' + nome : ''}`, 'Sim', 'Não'))) return false;
+  ir('dados', null, { nome, vinculo });
+  return true;
+}
+async function perguntarCadastroDoAvulsoCel(ag) {
+  if (await oferecerCadastroDoAvulso(ag.pacienteNomeAvulso, { agendamentoId: ag.id })) return true;
+  if (!(await perguntar('Deseja fazer um lançamento financeiro avulso?', 'Sim', 'Não'))) return false;
+  const idFin = await criarLancamentoFinanceiro(null, ag.data, ag.id, null, (ag.pacienteNomeAvulso || '').trim());
+  _cadastroAvulsoRecusado = idFin;
+  await salvarRegistro('raq_agendamentos|' + ag.id, { ...ag, financeiroGeradoId: idFin });
+  ir('formFinanceiro', idFin, null);
+  return true;
+}
+// paciente novo salvo a partir de um não cadastrado: o agendamento (e o lançamento ligado a ele) passa a ser dele
+async function vincularAvulsoAoPacienteNovo(pacienteId) {
+  const v = _vinculoCadastro; _vinculoCadastro = null;
+  if (!v) return;
+  const ag = v.agendamentoId ? G.raq_agendamentos.find((x) => x.id === v.agendamentoId) : null;
+  if (ag && !ag.pacienteId) await salvarRegistro('raq_agendamentos|' + ag.id, { ...ag, pacienteId, pacienteNomeAvulso: '' });
+  for (const f of G.raq_financeiro.slice()) {
+    if (f.pacienteId || !(f.id === v.financeiroId || (v.agendamentoId && f.agendamentoId === v.agendamentoId))) continue;
+    await salvarRegistro('raq_financeiro|' + f.id, { ...f, pacienteId, pacienteNomeAvulso: '' });
+  }
+}
+
+// ---------- Consulta ----------
+TELAS.formConsulta = (id, pid, financeiroDepois) => {
+  const c = id ? G.raq_consultas.find((x) => x.id === id) : { data: hojeISO() };
+  if (!c) { voltar(); return; }
+  formularioAlterado = false;
+  const pacienteId = id ? c.pacienteId : pid;
+  app.innerHTML = `${topo(id ? 'Consulta de ' + dataBR(c.data) : 'Nova consulta')}${faixaDoPaciente(pacienteId)}
+    <form class="conteudo" ${formularioVigiado('form-cons', `salvarConsultaCel(${id ? `'${esc(id)}'` : 'null'}, '${esc(pacienteId)}', ${financeiroDepois ? `'${esc(financeiroDepois)}'` : 'null'})`)}>
+      <div class="cartao form-cartao">
+        ${campoData('Data da consulta', 'data', c.data)}
+        ${campoTexto('Tratamento', 'tratamento', c.tratamento)}
+        ${campoTexto('Evolução', 'evolucao', c.evolucao)}
+        ${campoTexto('Observações', 'observacoes', c.observacoes)}
+      </div>
+      <button class="btn" type="submit" style="min-height:54px;font-size:17px">Salvar</button>
+      ${id ? botaoExcluir(`excluirComPergunta('raq_consultas|${esc(id)}', 'Tem certeza que deseja excluir esta consulta? Esta ação não pode ser desfeita.', 'Consulta excluída.')`) : ''}
+    </form>`;
+};
+async function salvarConsultaCel(id, pid, financeiroDepois) {
+  const f = document.getElementById('form-cons');
+  const datas = lerDatas(f, [['data', 'Data da consulta', true]]); if (!datas) return;
+  const existente = id ? G.raq_consultas.find((x) => x.id === id) : null;
+  const p = pacientes().find((x) => x.id === pid);
+  const dados = {
+    id: id || ('cons_' + Date.now()), pacienteId: pid,
+    fase: existente ? faseDaConsulta(existente) : (faseFicha[pid] || faseAtual(p)),
+    agendamentoId: existente ? existente.agendamentoId || null : null,
+    data: datas.data, tratamento: f.tratamento.value.trim(), evolucao: f.evolucao.value.trim(), observacoes: f.observacoes.value.trim(),
+  };
+  await salvarRegistro('raq_consultas|' + dados.id, dados);
+  formularioAlterado = false;
+  avisar('Consulta salva com sucesso.');
+  pilha.pop();
+  if (financeiroDepois) { ir('formFinanceiro', financeiroDepois, null); return; }
+  // consulta avulsa (sem agendamento): pergunta antes de criar o lançamento financeiro
+  if (!existente && !dados.agendamentoId && await perguntar('Deseja fazer o lançamento financeiro desta consulta?', 'Sim', 'Não')) {
+    ir('formFinanceiro', await criarLancamentoFinanceiro(pid, dados.data, null, dados.id), null); return;
+  }
+  desenhar();
+}
+
+// ---------- Lançamento financeiro ----------
+const precisaNotaFiscal = (f) => (f.precisaNota || (f.notaFiscal === 'Sim' ? 'Sim' : 'Não')) === 'Sim';
+TELAS.formFinanceiro = (id, pidFixo) => {
+  const f = id ? G.raq_financeiro.find((x) => x.id === id) : { data: hojeISO(), pagamento: 'Não', notaFiscal: 'Não' };
+  if (!f) { voltar(); return; }
+  formularioAlterado = false;
+  const fixo = id ? f.pacienteId : pidFixo;
+  const precisa = id ? (precisaNotaFiscal(f) ? 'Sim' : 'Não') : 'Não';
+  app.innerHTML = `${topo(id ? 'Financeiro de ' + dataBR(f.data) : 'Novo lançamento')}${faixaDoPaciente(fixo)}
+    <form class="conteudo" ${formularioVigiado('form-fin', `salvarFinanceiroCel(${id ? `'${esc(id)}'` : 'null'}, ${pidFixo ? `'${esc(pidFixo)}'` : 'null'})`)}>
+      <div class="cartao form-cartao">
+        ${fixo ? '' : blocoPaciente(null, id ? !f.pacienteId : false, f.pacienteNomeAvulso, f.pacienteId)}
+        ${campoData('Data da consulta', 'data', f.data)}
+        ${campoForm('Valor da consulta', 'valor', f.valor, 'text', 'inputmode="numeric" placeholder="R$ 0,00" oninput="this.value=MASCARAS.valor(this.value)"')}
+        ${selectPares('Tipo de pagamento', 'tipoPagamento', f.tipoPagamento || '', [['', 'Selecione'], ['Pix', 'Pix'], ['Dinheiro', 'Dinheiro'], ['Outros', 'Outros']])}
+        ${selectPares('Pagamento', 'pagamento', f.pagamento || 'Não', [['Não', 'Não'], ['Sim', 'Sim'], ['Abonado', 'Abonado']], 'onchange="alternarNotaFin(this.form)"')}
+        <span id="grp-fin-pago">${campoData('Data de pagamento', 'dataPagamento', f.dataPagamento)}</span>
+        ${selectPares('Precisa de nota fiscal?', 'precisaNota', precisa, [['Não', 'Não'], ['Sim', 'Sim']], 'onchange="alternarNotaFin(this.form)"', 'grp-fin-precisa')}
+        <span id="grp-fin-solicitada">${campoData('Solicitada ao contador em:', 'notaSolicitada', f.notaSolicitada)}</span>
+        ${selectPares('Nota fiscal emitida?', 'notaFiscal', f.notaFiscal || 'Não', [['Não', 'Não'], ['Sim', 'Sim']], 'onchange="alternarNotaFin(this.form)"')}
+        <span id="grp-fin-emitida" style="display:flex;flex-direction:column;gap:12px">${campoForm('Número da nota', 'notaNumero', f.notaNumero)}${campoData('Data de emissão', 'notaData', f.notaData)}</span>
+        ${campoTexto('Observações', 'observacoes', f.observacoes, 3)}
+      </div>
+      <button class="btn" type="submit" style="min-height:54px;font-size:17px">Salvar</button>
+      ${id ? botaoExcluir(`excluirComPergunta('raq_financeiro|${esc(id)}', 'Tem certeza que deseja excluir este lançamento financeiro? Esta ação não pode ser desfeita.', 'Lançamento financeiro excluído.')`) : ''}
+    </form>`;
+  alternarNotaFin(document.getElementById('form-fin'));
+};
+// campos que aparecem conforme as respostas (alternarNotaFiscalFinanceiro)
+function alternarNotaFin(f) {
+  const pago = f.pagamento.value === 'Sim';
+  const precisa = pago && f.precisaNota.value === 'Sim';
+  const emitida = f.notaFiscal.value === 'Sim';
+  document.getElementById('grp-fin-pago').style.display = pago ? '' : 'none';
+  document.getElementById('grp-fin-precisa').style.display = pago ? '' : 'none';
+  document.getElementById('grp-fin-solicitada').style.display = precisa ? '' : 'none';
+  document.getElementById('grp-fin-emitida').style.display = emitida ? 'flex' : 'none';
+}
+async function salvarFinanceiroCel(id, pidFixo) {
+  const f = document.getElementById('form-fin');
+  const existente = id ? G.raq_financeiro.find((x) => x.id === id) : null;
+  const fixo = id ? existente.pacienteId : pidFixo;
+  const pac = fixo ? { avulso: false, pacienteId: fixo, pacienteNomeAvulso: '' } : lerPacienteForm(f, null);
+  if (!pac) return;
+  const pago = f.pagamento.value === 'Sim', emitida = f.notaFiscal.value === 'Sim', precisa = pago && f.precisaNota.value === 'Sim';
+  const datas = lerDatas(f, [['data', 'Data da consulta', true], ...(pago ? [['dataPagamento', 'Data de pagamento', false]] : []),
+    ...(precisa ? [['notaSolicitada', 'Solicitada ao contador em', false]] : []), ...(emitida ? [['notaData', 'Data de emissão', false]] : [])]);
+  if (!datas) return;
+  const dados = {
+    id: id || ('fin_' + Date.now()), pacienteId: pac.pacienteId || null, pacienteNomeAvulso: pac.pacienteNomeAvulso,
+    pacienteExcluido: (pac.avulso && existente) ? !!existente.pacienteExcluido : false,
+    agendamentoId: existente ? existente.agendamentoId || null : null,
+    data: datas.data, pagamento: f.pagamento.value, dataPagamento: pago ? datas.dataPagamento : '',
+    valor: f.valor.value.trim(), tipoPagamento: f.tipoPagamento.value,
+    precisaNota: pago ? f.precisaNota.value : 'Não', notaSolicitada: precisa ? datas.notaSolicitada : '',
+    notaFiscal: f.notaFiscal.value, notaNumero: emitida ? f.notaNumero.value.trim() : '', notaData: emitida ? datas.notaData : '',
+    observacoes: f.observacoes.value.trim(),
+  };
+  await salvarRegistro('raq_financeiro|' + dados.id, Object.assign({}, existente || {}, dados));   // mantém o vínculo com a consulta
+  formularioAlterado = false;
+  avisar('Lançamento financeiro salvo com sucesso.');
+  pilha.pop();
+  const recusouAgora = _cadastroAvulsoRecusado === dados.id; _cadastroAvulsoRecusado = null;
+  if (pac.avulso && !dados.pacienteExcluido && !recusouAgora && await oferecerCadastroDoAvulso(pac.pacienteNomeAvulso, { financeiroId: dados.id, agendamentoId: dados.agendamentoId })) return;
+  desenhar();
+}
+
+// ---------- Lembretes (como no notebook: adicionar, marcar feito, remover) ----------
+TELAS.lembretes = () => {
+  const hoje = hojeISO();
+  const lista = G.raq_lembretes.slice().sort((a, b) => (!!a.feito !== !!b.feito) ? (a.feito ? 1 : -1) : ((a.data || '').localeCompare(b.data || '') || (a.hora || '').localeCompare(b.hora || '')));
+  app.innerHTML = `${topo('Lembretes')}
+    <form class="conteudo" id="form-lemb" onsubmit="event.preventDefault(); adicionarLembreteCel()">
+      <div class="cartao form-cartao">
+        ${campoForm('Novo lembrete', 'texto', '', 'text', 'autocomplete="off"')}
+        <div class="dupla">${campoData('Data', 'data', '')}${campoHora('Horário', 'hora', '')}</div>
+        <button class="btn" type="submit">Adicionar</button>
+      </div>
+      ${lista.length ? `<div class="cartao">${lista.map((l) => `<div class="linha-lemb${l.feito ? ' feito' : ''}">
+          <input type="checkbox" ${l.feito ? 'checked' : ''} aria-label="Feito" onchange="alternarLembreteCel('${esc(l.id)}')">
+          <span class="tx">${esc(l.texto)}<small style="color:${l.feito ? '#9db3ae' : (l.data === hoje ? 'var(--verde-medio)' : 'var(--texto-sec)')}">${esc(l.data ? dataBR(l.data) : '—')}${l.hora ? ' às ' + esc(l.hora) : ''}${l.data === hoje && !l.feito ? ' (hoje)' : ''}</small></span>
+          <button class="btn perigo pequeno" type="button" onclick="removerLembreteCel('${esc(l.id)}')">Remover</button></div>`).join('')}</div>`
+        : '<p class="vazio">Nenhum lembrete no momento.</p>'}
+    </form>`;
+};
+async function adicionarLembreteCel() {
+  const f = document.getElementById('form-lemb');
+  const texto = f.texto.value.trim(); if (!texto) { f.texto.focus(); return; }
+  const datas = lerDatas(f, [['data', 'Data', false]]); if (!datas) return;
+  const hora = f.hora.value.trim();
+  if (hora && !horaValida(hora)) { avisar('Horário: digite hh:mm (ex.: 09:30).'); f.hora.focus(); return; }
+  const id = 'l_' + Date.now();
+  await salvarRegistro('raq_lembretes|' + id, { id, texto, data: datas.data || hojeISO(), hora, feito: false, avisado: false });
+  desenhar();
+}
+async function alternarLembreteCel(id) {
+  const l = G.raq_lembretes.find((x) => x.id === id); if (!l) return;
+  await salvarRegistro('raq_lembretes|' + id, { ...l, feito: !l.feito });
+  desenhar();
+}
+async function removerLembreteCel(id) {
+  if (!(await perguntar('Remover este lembrete?', 'Remover', 'Cancelar'))) return;
+  await excluirRegistro('raq_lembretes|' + id);
+  desenhar();
+}
+
+// ---------- Aniversariantes: do dia, da semana (7 dias) e do mês (30 dias), como no notebook ----------
+let anivPeriodo = 'hoje';
+TELAS.aniversariantes = () => {
+  const h = new Date(); h.setHours(0, 0, 0, 0);
+  const itens = [];
+  pacientes().filter((p) => situacao(p) !== 'excluido' && p.nascimento).forEach((p) => {
+    const [, m, d] = p.nascimento.split('-').map(Number);
+    let prox = new Date(h.getFullYear(), m - 1, d); if (prox < h) prox = new Date(h.getFullYear() + 1, m - 1, d);
+    const dif = Math.round((prox - h) / 86400000);
+    if (dif <= { hoje: 0, semana: 7, mes: 30 }[anivPeriodo]) itens.push({ p, prox, dif });
+  });
+  itens.sort((a, b) => a.dif - b.dif || String(a.p.nome).localeCompare(String(b.p.nome), 'pt-BR'));
+  const titulos = { hoje: 'Aniversariantes do dia', semana: 'Aniversariantes da semana', mes: 'Aniversariantes do mês' };
+  app.innerHTML = `${topo('Aniversariantes')}
+    <div class="conteudo">
+      <div class="seg">${[['hoje', 'Hoje'], ['semana', 'Esta semana'], ['mes', 'Este mês']].map(([v, t]) => `<button class="${anivPeriodo === v ? 'ativo' : ''}" onclick="anivPeriodo='${v}'; desenhar()">${t}</button>`).join('')}</div>
+      <div class="cab-lista"><b>${titulos[anivPeriodo]} (${itens.length})</b></div>
+      ${itens.length ? `<div class="cartao">${itens.map(({ p, prox }) => `<div class="item-pac"><button class="abrir" onclick="ir('ficha','${esc(p.id)}')"><span class="n">${esc(p.nome)}</span>
+          <span class="d">${anivPeriodo === 'hoje' ? esc(idade(p.nascimento)) : `${String(prox.getDate()).padStart(2, '0')}/${String(prox.getMonth() + 1).padStart(2, '0')} · ${esc(DIAS[prox.getDay()])}`}</span></button></div>`).join('')}</div>`
+        : `<p class="vazio">${anivPeriodo === 'hoje' ? 'Nenhum paciente faz aniversário hoje.' : 'Nenhum aniversariante neste período.'}</p>`}
+    </div>`;
+};
 
 // ====================== configurações ======================
 TELAS.configuracoes = () => {
@@ -1178,7 +1941,7 @@ TELAS.configuracoes = () => {
       <div class="cartao dados"><div class="l"><span>Última atualização</span><span>${esc(quandoCurto(estado.ultima))}</span></div></div>
       <button class="btn" onclick="atualizarComGoogle()">Atualizar agora</button>
       <p class="grupo">Sobre</p>
-      <div class="cartao dados"><div class="l"><span>Versão</span><span>celular 0.7.1</span></div></div>
+      <div class="cartao dados"><div class="l"><span>Versão</span><span>celular 0.9</span></div></div>
       <p style="font-size:12px;color:var(--texto-ter);margin:4px 2px">Usuários, backup, registro de atividades e licença ficam no notebook.</p>
       <button class="link" onclick="desligarCelular()">Tirar os dados deste celular</button>
     </div>`;

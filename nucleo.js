@@ -113,7 +113,7 @@
   // ---------- leitura dos lotes ----------
   // estado = { aplicados: Set de nomes de lotes já lidos, registros: Map "gaveta|id" → { v (registro ou null), em } }
   // pendentes: Map "gaveta|id" → { v, em, base } — alterações feitas no celular que ainda não foram enviadas
-  function novoEstado() { return { aplicados: new Set(), registros: new Map(), pendentes: new Map(), aparelho: 'cel' + sorteio(4) }; }
+  function novoEstado() { return { aplicados: new Set(), registros: new Map(), pendentes: new Map(), anexosPendentes: [], aparelho: 'cel' + sorteio(4) }; }
 
   async function lerNovidades(chave, transporte, estado, aoProgresso) {
     const nomes = (await transporte.listar()).filter((n) => /^lote_.*\.sgsync$/.test(n) && !estado.aplicados.has(n)).sort();
@@ -165,6 +165,13 @@
     return nome;
   }
 
+  // conteúdo de um arquivo anexado feito no celular (mesmo nome e formato que o notebook usa)
+  async function enviarAnexo(chave, transporte, id, campo, conteudo) {
+    const nome = `anexo_${id}_${campo}.sgsync`;
+    await transporte.gravar(nome, await cifrarArquivo(chave, nome, txt.encode(conteudo)));
+    return nome;
+  }
+
   // Junta uma alteração deste celular (ainda não enviada) com uma versão mais nova que chegou de outro aparelho:
   // os campos que o celular mudou ficam com o valor do celular; os outros ficam com o que chegou.
   const estavel = (v) => v === undefined ? 'u' : (v === null || typeof v !== 'object') ? JSON.stringify(v)
@@ -207,6 +214,6 @@
   }
 
   const api = { ARQ_CABECALHO, GAVETAS, CAMPO_CARIMBO, codigoValido, normalizarCodigo, scrypt, abrirCadeado, novoEstado, lerNovidades, montarGavetas, lerAnexo, lerRecurso, conferirSenha,
-    enviarLote, juntarComRemoto, sorteio };
+    enviarLote, enviarAnexo, juntarComRemoto, sorteio, MARCA_ANEXO: '@cofre', CAMPO_PID };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else raiz.SgoNucleo = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

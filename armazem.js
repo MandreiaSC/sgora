@@ -26,7 +26,7 @@
 
   async function gravarEstado(chave, estado) {
     const dados = new TextEncoder().encode(JSON.stringify({ aplicados: [...estado.aplicados], registros: [...estado.registros], ultima: estado.ultima || null,
-      pendentes: [...(estado.pendentes || new Map())], aparelho: estado.aparelho || null }));
+      pendentes: [...(estado.pendentes || new Map())], aparelho: estado.aparelho || null, anexosPendentes: estado.anexosPendentes || [] }));
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const cifrado = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: new TextEncoder().encode('sgora-celular-estado') }, chave, dados);
     await gravar('estado', { iv, dados: new Uint8Array(cifrado) });
@@ -37,7 +37,7 @@
     const claro = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: e.iv, additionalData: new TextEncoder().encode('sgora-celular-estado') }, chave, e.dados);
     const o = JSON.parse(new TextDecoder().decode(claro));
     return { aplicados: new Set(o.aplicados), registros: new Map(o.registros), ultima: o.ultima || null,
-      pendentes: new Map(o.pendentes || []), aparelho: o.aparelho || ('cel' + Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, '0')).join('')) };
+      pendentes: new Map(o.pendentes || []), anexosPendentes: o.anexosPendentes || [], aparelho: o.aparelho || ('cel' + Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, '0')).join('')) };
   }
 
   // textos guardados criptografados (ex.: aparência dos documentos, com a assinatura)
@@ -53,5 +53,7 @@
     catch { return null; }
   }
 
-  window.SgoArmazem = { ler, gravar, apagarTudo, gravarEstado, lerEstado, gravarTexto, lerTexto };
+  const apagarTexto = (k) => op('readwrite', (l) => l.delete('t_' + k));
+
+  window.SgoArmazem = { ler, gravar, apagarTudo, gravarEstado, lerEstado, gravarTexto, lerTexto, apagarTexto };
 })();

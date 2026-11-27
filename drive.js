@@ -87,11 +87,29 @@
       const r = await pedir(`${API}/${id}?alt=media`);
       return r.ok ? new Uint8Array(await r.arrayBuffer()) : null;
     },
+    // grava um arquivo NOVO na pasta (o celular só cria lotes novos; nunca reescreve)
+    async gravar(nome, bytes) {
+      const p = await pasta();
+      const limite = 'sgora' + Math.random().toString(16).slice(2);
+      const meta = JSON.stringify({ name: nome, parents: [p] });
+      const corpo = new Blob([`--${limite}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${limite}\r\nContent-Type: application/octet-stream\r\n\r\n`, bytes, `\r\n--${limite}--`]);
+      if (!temPasse()) { const e = new Error('Entre com o Google para enviar.'); e.code = 'SEM_PASSE'; throw e; }
+      let r;
+      try { r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name', { method: 'POST', headers: { Authorization: 'Bearer ' + passe.token, 'Content-Type': 'multipart/related; boundary=' + limite }, body: corpo }); }
+      catch (x) { const e = new Error('Sem internet.'); e.code = 'SEM_INTERNET'; throw e; }
+      if (r.status === 401) { esquecer(); const e = new Error('Entre com o Google para enviar.'); e.code = 'SEM_PASSE'; throw e; }
+      if (!r.ok) throw new Error('Não foi possível enviar ao Google Drive.');
+      const j = await r.json(); ids.set(j.name, j.id);
+    },
   };
   // testes da oficina: pasta do computador servida pelo servidor de teste
   const transporteTeste = {
     async listar() { return (await fetch('/comum/')).json(); },
     async ler(nome) { const r = await fetch('/comum/' + encodeURIComponent(nome)); return r.ok ? new Uint8Array(await r.arrayBuffer()) : null; },
+    async gravar(nome, bytes) {
+      let r; try { r = await fetch('/comum/' + encodeURIComponent(nome), { method: 'POST', body: bytes }); } catch (x) { const e = new Error('Sem internet.'); e.code = 'SEM_INTERNET'; throw e; }
+      if (!r.ok) throw new Error('Não foi possível enviar.');
+    },
   };
 
   window.SgoDrive = { modoTeste, temPasse, entrar, esquecer, transporte: modoTeste ? transporteTeste : transporteDrive };
