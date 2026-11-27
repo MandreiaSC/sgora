@@ -191,6 +191,21 @@
   .linha-lemb .tx{flex:1; min-width:0; font-size:15px; overflow-wrap:anywhere;}
   .linha-lemb .tx small{display:block; font-size:12px; color:var(--texto-sec); font-weight:600;}
   .linha-lemb.feito .tx{text-decoration:line-through; color:#9db3ae;}
+  .sugestoes{display:flex; flex-direction:column; border-radius:10px; overflow:hidden;}
+  .sugestoes:not(:empty){border:1px solid var(--borda);}
+  .sugestoes button{text-align:left; background:#fff; border:0; border-bottom:1px solid var(--borda); padding:10px 12px; font:inherit; font-size:15px; color:var(--texto); display:flex; flex-direction:column; gap:2px;}
+  .sugestoes button:last-child{border-bottom:0;}
+  .sugestoes button span{font-size:12.5px; color:var(--texto-sec); font-weight:400;}
+  .visor-img{background:#1c2b29;}
+  .visor-img img{display:block; max-width:none; height:auto; margin:auto;}
+  .marca-arq{width:24px; height:24px; margin:0 10px; flex:none; accent-color:var(--verde-claro);}
+  .fase-faixa{font-weight:700; color:var(--verde-medio) !important;}
+  .acoes-ficha .btn{font-size:14px; padding:0 8px; line-height:1.2;}
+  .alta-hist{background:#fbfdfc; border:1px solid var(--borda); border-radius:10px; padding:10px 12px;}
+  .alta-hist .t{margin:0 0 6px; font-size:12px; font-weight:700; color:var(--texto-ter); text-transform:none;}
+  .alta-hist p{margin:4px 0; font-size:13px; color:var(--texto-sec);}
+  .alta-hist p b{color:var(--verde-escuro);}
+  .alta-hist .m{display:block; font-size:12.5px; color:var(--texto-sec);}
   .botoes-arq{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px;}
   .botoes-arq .btn{flex-direction:column; gap:4px; min-height:66px; font-size:14px; padding:0 6px;}
   .cel-neural{width:100%; height:34px; border:0; background:transparent; text-align:center; font-size:16px; font-family:inherit; color:var(--texto); padding:0;}
@@ -312,7 +327,7 @@ const MARCA = (grande) => `<span class="marca-topo${grande ? ' grande' : ''}"><i
 function ir(tela, ...args) { pilha.push([tela, args]); desenhar(); window.scrollTo(0, 0); }
 async function voltar() {
   if (formularioAlterado && !(await perguntar('Existem alterações que ainda não foram salvas.\nDeseja sair sem salvar?', 'Sair sem salvar', 'Continuar editando'))) return;
-  formularioAlterado = false; _sequenciaNovo = null;
+  formularioAlterado = false; _sequenciaNovo = null; selArq = false; arqMarcados.clear();
   if (pilha.length > 1) pilha.pop(); desenhar(); window.scrollTo(0, 0);
 }
 function desenhar() { const [tela, args] = pilha[pilha.length - 1]; TELAS[tela](...args); }
@@ -664,7 +679,7 @@ TELAS.pacientes = () => {
     <div class="conteudo">
       <label class="campo" style="font-size:14px">Busca geral<input type="search" id="busca-pac" placeholder="Nome, CPF, celular, queixa..." value="${esc(filtroPac.busca)}" oninput="filtroPac.busca=this.value; listarPacientes()"></label>
       <button class="btn" onclick="ir('dados', null)">${ICONE.mais}Cadastrar paciente</button>
-      <div class="seg"><button class="${filtroPac.sit === 'ativo' ? 'ativo' : ''}" onclick="filtroPac.sit='ativo'; desenhar()">Ativos</button><button class="${filtroPac.sit === 'alta' ? 'ativo' : ''}" onclick="filtroPac.sit='alta'; desenhar()">Com alta</button></div>
+      <div class="seg">${[['ativo', 'Ativos'], ['alta', 'Com alta'], ['excluido', 'Lixeira']].map(([s, t]) => `<button class="${filtroPac.sit === s ? 'ativo' : ''}" onclick="filtroPac.sit='${s}'; desenhar()">${t}</button>`).join('')}</div>
       <div class="cab-lista"><b id="titulo-lista"></b><button class="ordem" onclick="filtroPac.ordem = filtroPac.ordem==='nome' ? 'ultima' : 'nome'; listarPacientes()" id="btn-ordem"></button></div>
       <div id="lista-pac" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>`;
@@ -684,13 +699,13 @@ function listarPacientes() {
   }
   if (filtroPac.ordem === 'nome') lista.sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
   else lista.sort((a, b) => String(ult[b.id] || '').localeCompare(String(ult[a.id] || '')) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
-  document.getElementById('titulo-lista').textContent = `${filtroPac.sit === 'ativo' ? 'Pacientes ativos' : 'Com alta'} (${lista.length})`;
+  document.getElementById('titulo-lista').textContent = `${{ ativo: 'Pacientes ativos', alta: 'Com alta', excluido: 'Lixeira' }[filtroPac.sit]} (${lista.length})`;
   document.getElementById('btn-ordem').textContent = filtroPac.ordem === 'nome' ? 'Ordenar: Nome ▲' : 'Ordenar: Última consulta ▼';
   document.getElementById('lista-pac').innerHTML = lista.length ? lista.map((p) => {
     const q = anamneseDaFase(p.id, faseAtual(p)).queixaPrincipal || '';
     const linha2 = [p.celular || p.telefone, p.bairro].filter(Boolean).join(' · ');
     const linha3 = [q, ult[p.id] ? 'Última consulta: ' + dataBR(ult[p.id]) : ''].filter(Boolean).join(' · ');
-    return `<div class="cartao item-pac"><button class="abrir" onclick="ir('ficha','${esc(p.id)}')"><span class="n">${esc(p.nome)}</span>${linha2 ? `<span class="d">${esc(linha2)}</span>` : ''}${linha3 ? `<span class="d">${esc(linha3)}</span>` : ''}</button>
+    return `<div class="cartao item-pac"><button class="abrir" onclick="filtroPac.busca=''; ir('ficha','${esc(p.id)}')"><span class="n">${esc(p.nome)}</span>${linha2 ? `<span class="d">${esc(linha2)}</span>` : ''}${linha3 ? `<span class="d">${esc(linha3)}</span>` : ''}</button>
       <button class="olho" aria-label="Visualizar" onclick="espiarPaciente('${esc(p.id)}')">${ICONE.olho}</button></div>`;
   }).join('') : '<p class="vazio">Nenhum paciente encontrado.</p>';
 }
@@ -702,7 +717,7 @@ function espiarPaciente(id) {
   abrirFolha(`<h2>${esc(p.nome)}</h2><div class="dados cartao">
     ${[['Idade', idade(p.nascimento)], ['Celular', p.celular], ['Última consulta', dataBR(ult)], ['Próximo agendamento', prox ? `${dataBR(prox.data)}, ${prox.horario || ''}` : ''], ['Queixa principal' + (fases(p).length > 1 ? ' — Fase ' + faseAtual(p) : ''), q]]
       .filter(([, v]) => v).map(([r, v]) => `<div class="l"><span>${esc(r)}</span><span>${esc(v)}</span></div>`).join('')}</div>
-    <button class="btn" style="margin-top:12px" onclick="this.closest('.veu').remove(); ir('ficha','${esc(id)}')">Abrir a ficha</button>`);
+    <button class="btn" style="margin-top:12px" onclick="this.closest('.veu').remove(); filtroPac.busca=''; ir('ficha','${esc(id)}')">Abrir a ficha</button>`);
 }
 
 // ====================== ficha ======================
@@ -715,10 +730,13 @@ TELAS.ficha = (id) => {
   const ult = ultimasConsultas()[id];
   const q = anamneseDaFase(id, n).queixaPrincipal || '';
   const fs = fases(p).map((f) => f.numero).sort((a, b) => b - a);
+  const sit = situacao(p), nAtual = faseAtual(p);
   app.innerHTML = `${topo('Ficha do paciente')}
-    <div class="faixa-pac"><p><b>${esc(p.nome)}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}${ult ? ' · Última consulta: ' + esc(dataBR(ult)) : ''}</p>${q ? `<p>${esc(q)}</p>` : ''}</div>
+    <div class="faixa-pac"><p><b>${esc(p.nome)}</b>${p.nascimento ? ' · ' + esc(idade(p.nascimento)) : ''}${ult ? ' · Última consulta: ' + esc(dataBR(ult)) : ''}</p>
+      ${fs.length > 1 ? `<p class="fase-faixa">Fase ${n}${n === nAtual ? ' (atual)' : ''}${q ? ' — ' + esc(q) : ''}</p>` : (q ? `<p>${esc(q)}</p>` : '')}</div>
     <div class="conteudo">
-      ${situacao(p) === 'alta' ? '<p class="aviso">Paciente com alta.</p>' : ''}
+      ${sit === 'alta' ? '<p class="aviso">Paciente com alta.</p>' : ''}
+      ${sit === 'excluido' ? '<p class="aviso erro">Paciente na lixeira.</p>' : ''}
       ${fs.length > 1 ? `<label class="campo" style="font-size:14px">Fase<select style="border:1.5px solid var(--verde-claro);font-weight:600;color:var(--verde-medio)" onchange="faseFicha['${esc(id)}']=Number(this.value); desenhar()">
         ${fs.map((f) => { const qq = anamneseDaFase(id, f).queixaPrincipal || ''; return `<option value="${f}" ${f === n ? 'selected' : ''}>Fase ${f}${f === faseAtual(p) ? ' (atual)' : ''}${qq ? ' — ' + esc(qq.length > 28 ? qq.slice(0, 28) + '…' : qq) : ''}</option>`; }).join('')}</select></label>` : ''}
       <div class="submenus">
@@ -732,8 +750,69 @@ TELAS.ficha = (id) => {
         <button class="sm breve" onclick="ir('embreve','Documentos avulsos')">Documentos avulsos</button>
         <button class="sm breve" onclick="ir('embreve','Exportar ficha')">Exportar ficha</button>
       </div>
+      ${sit === 'ativo' ? `<div class="dupla acoes-ficha"><button class="btn medio" onclick="altaPaciente('${esc(id)}')">Alta fisioterapêutica</button><button class="btn claro" onclick="novaFase('${esc(id)}')">Nova fase de tratamento</button></div>` : ''}
+      ${sit === 'alta' ? `<button class="btn" onclick="reativarPaciente('${esc(id)}')">Reativar paciente</button>` : ''}
+      ${sit === 'excluido' ? `<button class="btn" onclick="restaurarPaciente('${esc(id)}')">Restaurar paciente</button>` : ''}
     </div>`;
 };
+// ---------- Alta, reativar, nova fase e restaurar — mesmas regras e textos do notebook
+// (darAltaPacienteAtual/confirmarAlta, reativarPacienteAtual/_reativar, novaFaseTratamento/_criarNovaFase, restaurarPacientes) ----------
+const quemSou = () => usuario ? (usuario.nomeExibicao || usuario.nome || usuario.login) : '';
+const pacienteDe = (id) => pacientes().find((x) => x.id === id);
+async function altaPaciente(id) {
+  const p = pacienteDe(id); if (!p) return;
+  const anteriores = (p.altas || []).filter((a) => a.data).slice().reverse();
+  if (!anteriores.length && !(await perguntar(`Alta confirmada?\n\n${p.nome}`, 'Sim', 'Não'))) return;
+  const hist = anteriores.length ? `<div class="alta-hist"><p class="t">Altas anteriores</p>${anteriores.map((a) => `<p><b>Alta em ${esc(dataBR(a.data))}</b>${a.reativadoEm ? ` · reativado em ${esc(new Date(a.reativadoEm).toLocaleDateString('pt-BR'))}` : ''}${a.observacoes ? `<span class="m">${esc(a.observacoes)}</span>` : ''}</p>`).join('')}</div>` : '';
+  abrirFolha(`<h2>Alta fisioterapêutica</h2><p class="pac-fixo" style="margin-bottom:10px">${esc(p.nome)}</p>${hist}
+    ${anteriores.length ? `<div id="alta-pergunta"><p style="margin:12px 0">Deseja registrar uma nova alta?</p><div class="dupla"><button class="btn" onclick="document.getElementById('alta-pergunta').remove(); document.getElementById('form-alta').style.display='flex'">Sim</button><button class="btn claro" onclick="this.closest('.veu').remove()">Não</button></div></div>` : ''}
+    <form id="form-alta" onsubmit="event.preventDefault(); confirmarAltaCel('${esc(id)}')" style="display:${anteriores.length ? 'none' : 'flex'};flex-direction:column;gap:12px;margin-top:12px">
+      ${campoData('Data da alta', 'data', hojeISO())}${campoTexto('Observações', 'observacoes', '', 4)}
+      <button class="btn" type="submit">Confirmar alta</button></form>`, 'Cancelar');
+}
+async function confirmarAltaCel(id) {
+  const f = document.getElementById('form-alta');
+  const d = lerDatas(f, [['data', 'Data da alta', true]]); if (!d) return;
+  const p = pacienteDe(id); if (!p) return;
+  const altas = (p.altas || []).concat([{ data: d.data, fase: faseAtual(p), observacoes: f.observacoes.value.trim(), registradaPor: quemSou(), registradaEm: new Date().toISOString() }]);
+  await salvarRegistro('raq_pacientes|' + id, { ...p, situacao: 'alta', altas });
+  f.closest('.veu').remove();
+  avisar('Alta registrada.'); desenhar();
+}
+async function reativarPaciente(id) {
+  const p = pacienteDe(id); if (!p) return;
+  if (!(await perguntar(`Reativar ${p.nome}?`, 'Reativar', 'Cancelar'))) return;
+  const altas = (p.altas || []).map((a) => ({ ...a }));
+  const u = altas[altas.length - 1]; if (u) { u.reativadoEm = new Date().toISOString(); u.reativadoPor = quemSou(); }
+  await salvarRegistro('raq_pacientes|' + id, { ...p, situacao: 'ativo', altas });
+  avisar('Paciente reativado.'); desenhar();
+  // quem volta depois da alta normalmente começa um tratamento novo
+  const proxima = faseAtual(pacienteDe(id)) + 1;
+  if (await perguntar(`Deseja começar a fase ${proxima} de tratamento?`, 'Sim', 'Não')) await comecarFase(id);
+}
+async function novaFase(id) {
+  const p = pacienteDe(id); if (!p || situacao(p) !== 'ativo') return;
+  if (!(await perguntar(`Começar a fase ${faseAtual(p) + 1} de tratamento?\n\n${p.nome}`, 'Sim', 'Não'))) return;
+  await comecarFase(id);
+}
+// cria a fase e segue como no paciente novo: Anamnese → Exame físico → Consultas
+async function comecarFase(id) {
+  const p = pacienteDe(id); if (!p) return;
+  const fs = fases(p).map((f) => ({ ...f }));
+  if (!fs[0].inicio) fs[0].inicio = p.dataCadastro || '';
+  const numero = faseAtual(p) + 1;
+  fs.push({ numero, inicio: hojeISO(), criadaPor: quemSou(), criadaEm: new Date().toISOString() });
+  await salvarRegistro('raq_pacientes|' + id, { ...p, fases: fs });
+  faseFicha[id] = numero;
+  desenhar();
+  _sequenciaNovo = id; ir('formAnamnese', id);
+}
+async function restaurarPaciente(id) {
+  const p = pacienteDe(id); if (!p) return;
+  const { situacaoAnterior, excluidoEm, excluidoPor, ...resto } = p;
+  await salvarRegistro('raq_pacientes|' + id, { ...resto, situacao: situacaoAnterior || 'ativo' });
+  avisar('Paciente restaurado.'); desenhar();
+}
 // ---------- Dados cadastrais (editar e cadastrar) — campos, opções e máscaras iguais ao notebook (salvarPaciente) ----------
 const OP_SEXO = ['Masculino', 'Feminino'];
 const OP_ESTADO_CIVIL = ['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)'];
@@ -744,8 +823,9 @@ const MASCARAS = {
   telefone: (v) => v.replace(/\D/g, '').slice(0, 10).replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2'),
   celular: (v) => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2'),
   cep: (v) => v.replace(/\D/g, '').slice(0, 8).replace(/(\d{5})(\d)/, '$1-$2'),
-  data: (v) => v.replace(/\D/g, '').slice(0, 8).replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2}\/\d{2})(\d)/, '$1/$2'),
-  hora: (v) => v.replace(/\D/g, '').slice(0, 4).replace(/(\d{2})(\d)/, '$1:$2'),
+  // digitar com o campo já cheio começa uma data nova (o que passa de 8 números vira o começo da data nova)
+  data: (v) => { let d = v.replace(/\D/g, ''); if (d.length > 8) d = d.slice(8); return d.replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2}\/\d{2})(\d)/, '$1/$2'); },
+  hora: (v) => { let d = v.replace(/\D/g, ''); if (d.length > 4) d = d.slice(4); return d.replace(/(\d{2})(\d)/, '$1:$2'); },
   // igual ao mascararValorFinanceiro do notebook
   valor: (v) => { const d = v.replace(/\D/g, ''); if (!d) return ''; return 'R$ ' + (parseInt(d, 10) / 100).toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+,)/g, '$1.'); },
 };
@@ -758,11 +838,13 @@ function isoDeBr(s) {
   return (d.getFullYear() === +m[3] && d.getMonth() === +m[2] - 1 && d.getDate() === +m[1]) ? `${m[3]}-${m[2]}-${m[1]}` : null;
 }
 function campoData(rotulo, nome, iso, depois = '') {
-  return campoForm(rotulo, nome, brDeIso(iso), 'text', `inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" autocomplete="off" oninput="this.value=MASCARAS.data(this.value); ${depois}"`);
+  return campoForm(rotulo, nome, brDeIso(iso), 'text', `inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="18" autocomplete="off" onfocus="selecionarTudo(this)" oninput="this.value=MASCARAS.data(this.value); ${depois}"`);
 }
 function campoHora(rotulo, nome, valor) {
-  return campoForm(rotulo, nome, valor, 'text', 'inputmode="numeric" placeholder="hh:mm" maxlength="5" autocomplete="off" oninput="this.value=MASCARAS.hora(this.value)"');
+  return campoForm(rotulo, nome, valor, 'text', 'inputmode="numeric" placeholder="hh:mm" maxlength="9" autocomplete="off" onfocus="selecionarTudo(this)" oninput="this.value=MASCARAS.hora(this.value)"');
 }
+// ao tocar no campo, tudo fica selecionado: o que se digita substitui a data/hora que estava lá (no iPhone precisa esperar o toque)
+function selecionarTudo(el) { setTimeout(() => { try { el.setSelectionRange(0, el.value.length); } catch (e) { /* nada */ } }, 0); }
 // lê as datas do formulário; se alguma estiver errada, avisa, põe o cursor nela e devolve null
 function lerDatas(f, pares) {
   const r = {};
@@ -1150,12 +1232,15 @@ function editarCadeia(lado) {
   document.body.appendChild(v);
   desenharEditorCadeia();
   const area = v.querySelector('#area-cadeia');
-  area.addEventListener('pointerdown', (ev) => { const s = area.querySelector('svg'); const p = posNaFigura(ev, s); _arraste = { lado, s, x0: p.x, y0: p.y, x: p.x, y: p.y, w: p.w, h: p.h }; try { area.setPointerCapture(ev.pointerId); } catch (e) { /* nada */ } ev.preventDefault(); });
-  area.addEventListener('pointermove', (ev) => { if (!_arraste) return; const p = posNaFigura(ev, _arraste.s); _arraste.x = p.x; _arraste.y = p.y; if (_ferramenta !== 'ponto') desenharEditorCadeia(); });
+  // a medida da figura é tirada uma vez, no toque: durante o arraste a figura é redesenhada (a de antes sai da tela)
+  area.addEventListener('pointerdown', (ev) => { const r = area.querySelector('svg').getBoundingClientRect(); const p = posNaFigura(ev, r); _arraste = { lado, r, x0: p.x, y0: p.y, x: p.x, y: p.y, w: p.w, h: p.h }; try { area.setPointerCapture(ev.pointerId); } catch (e) { /* nada */ } ev.preventDefault(); });
+  area.addEventListener('pointermove', (ev) => { if (!_arraste) return; const p = posNaFigura(ev, _arraste.r); _arraste.x = p.x; _arraste.y = p.y; if (_ferramenta !== 'ponto') desenharEditorCadeia(); });
+  // no iPhone, arrastar o dedo na figura não pode rolar a tela (senão o círculo/seta é cancelado no meio)
+  area.addEventListener('touchmove', (ev) => ev.preventDefault(), { passive: false });
   const fim = () => { if (_arraste) fimArrasteCadeia(); };
   area.addEventListener('pointerup', fim); area.addEventListener('pointercancel', fim);
 }
-function posNaFigura(ev, svg) { const r = svg.getBoundingClientRect(); return { x: (ev.clientX - r.left) / r.width * 100, y: (ev.clientY - r.top) / r.height * 100, w: r.width, h: r.height }; }
+function posNaFigura(ev, r) { return { x: (ev.clientX - r.left) / r.width * 100, y: (ev.clientY - r.top) / r.height * 100, w: r.width, h: r.height }; }
 function desenharEditorCadeia() {
   const area = document.getElementById('area-cadeia'); if (!area) return;
   const lado = area.dataset.lado;
@@ -1223,6 +1308,7 @@ function prepararDesenhoCel() {
   });
   const parar = () => { desenhando = false; };
   c.addEventListener('pointerup', parar); c.addEventListener('pointercancel', parar);
+  c.addEventListener('touchmove', (ev) => ev.preventDefault(), { passive: false });   // iPhone: desenhar não rola a tela
 }
 function desfazerDesenhoCel() {
   const c = document.getElementById('canvas-livre-cel'); const s = _exEd.desfazerDesenho.pop();
@@ -1477,13 +1563,39 @@ TELAS.arquivos = (id) => {
       <input type="file" id="arq-camera" accept="image/*" capture="environment" hidden onchange="arquivosEscolhidos('${esc(id)}', this, 'foto')">
       <input type="file" id="arq-galeria" accept="image/*" multiple hidden onchange="arquivosEscolhidos('${esc(id)}', this, 'galeria')">
       <input type="file" id="arq-arquivo" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*,application/pdf" hidden onchange="arquivosEscolhidos('${esc(id)}', this, 'arquivo')">
-      ${lista.length ? `<div class="cartao">${lista.map((a) => `<div class="item-pac"><span style="flex:none">${tipoArquivo(a) === 'imagem' ? ICONE_ARQ.imagem : ICONE_ARQ.doc}</span>
-          <button class="abrir" onclick="abrirArquivo('${esc(id)}','${esc(a.id)}')"><span class="n">${esc(a.nome || a.nomeOriginal || 'Arquivo')}</span>
+      ${lista.length ? `<div class="cab-lista"><b>${lista.length} ${lista.length === 1 ? 'arquivo' : 'arquivos'}</b><button class="ordem" id="btn-sel-arq" onclick="alternarSelecaoArq()">${selArq ? 'Selecionando...' : 'Selecionar'}</button></div>
+        <div class="cartao${selArq ? ' selecionando' : ''}" id="lista-arq">${lista.map((a) => `<div class="item-pac"><span style="flex:none">${tipoArquivo(a) === 'imagem' ? ICONE_ARQ.imagem : ICONE_ARQ.doc}</span>
+          <button class="abrir" onclick="${selArq ? `marcarArq('${esc(a.id)}')` : `abrirArquivo('${esc(id)}','${esc(a.id)}')`}"><span class="n">${esc(a.nome || a.nomeOriginal || 'Arquivo')}</span>
           <span class="d">${esc([a.dataUpload ? new Date(a.dataUpload).toLocaleDateString('pt-BR') : '', tamanhoArquivo(a.tamanho)].filter(Boolean).join(' · '))}</span></button>
-          <button class="olho" aria-label="Visualizar" onclick="abrirArquivo('${esc(id)}','${esc(a.id)}')">${ICONE.olho}</button></div>`).join('')}</div>`
+          ${selArq ? `<input type="checkbox" class="marca-arq" data-id="${esc(a.id)}" ${arqMarcados.has(a.id) ? 'checked' : ''} aria-label="Selecionar" onchange="marcarArq('${esc(a.id)}', this.checked)">`
+            : `<button class="olho" aria-label="Visualizar" onclick="abrirArquivo('${esc(id)}','${esc(a.id)}')">${ICONE.olho}</button>`}</div>`).join('')}</div>
+        ${selArq ? `<button class="btn perigo" id="btn-excluir-arq" onclick="excluirArquivosCel('${esc(id)}')" ${arqMarcados.size ? '' : 'disabled'}>Excluir selecionados${arqMarcados.size ? ` (${arqMarcados.size})` : ''}</button>` : ''}`
         : '<p class="vazio">Nenhum arquivo enviado ainda.</p>'}
     </div>`;
 };
+// selecionar e excluir arquivos (padrão do notebook: botão "Selecionar" → caixinhas → "Excluir selecionados")
+let selArq = false; const arqMarcados = new Set();
+function alternarSelecaoArq() { selArq = !selArq; arqMarcados.clear(); desenhar(); }
+function marcarArq(aid, marcado) {
+  if (marcado === undefined) marcado = !arqMarcados.has(aid);
+  if (marcado) arqMarcados.add(aid); else arqMarcados.delete(aid);
+  const cx = document.querySelector(`.marca-arq[data-id="${aid}"]`); if (cx) cx.checked = marcado;
+  const b = document.getElementById('btn-excluir-arq');
+  if (b) { b.disabled = !arqMarcados.size; b.textContent = 'Excluir selecionados' + (arqMarcados.size ? ` (${arqMarcados.size})` : ''); }
+}
+async function excluirArquivosCel(pid) {
+  const ids = [...arqMarcados]; if (!ids.length) return;
+  if (!(await perguntar(`Tem certeza que deseja excluir ${ids.length} arquivo(s) selecionado(s)? Esta ação não pode ser desfeita.`, 'Excluir', 'Cancelar'))) return;
+  for (const aid of ids) {
+    await excluirRegistro('raq_arquivos_pacientes|' + aid);
+    estado.anexosPendentes = (estado.anexosPendentes || []).filter((x) => x.id !== aid);   // ainda não enviado: nem vai
+    A.apagarTexto(`anexo_${aid}_dados`).catch(() => {});
+  }
+  await A.gravarEstado(chave, estado);
+  selArq = false; arqMarcados.clear();
+  avisar(ids.length + ' arquivo(s) excluído(s).');
+  desenhar();
+}
 // Aparência dos documentos avulsos (CSS + fundos, logo e assinatura): o notebook manda criptografado; o celular
 // guarda (também criptografado) e só baixa de novo quando o notebook mandar uma versão nova.
 let _recDocs = null;
@@ -1549,6 +1661,41 @@ function aplicarZoomDoc(z, cx, cy) {
   visor.scrollLeft = fx * visor.scrollWidth - cx; visor.scrollTop = fy * visor.scrollHeight - cy;
   document.getElementById('zoom-doc-txt').textContent = Math.round(z * 100) + '%';
 }
+// foto em tela inteira: cabe na largura; dois dedos ou − / + ampliam (até 5 vezes), rolando para os lados
+let _zoomImg = null;
+function verImagem(src, titulo) {
+  const v = document.createElement('div'); v.className = 'veu veu-cheio';
+  v.innerHTML = `<div class="folha folha-cheia folha-doc"><h2>${esc(titulo)}</h2>
+    <div class="zoom-doc"><button type="button" aria-label="Diminuir" onclick="zoomImgBotao(-1)">−</button><span id="zoom-img-txt">100%</span><button type="button" aria-label="Aumentar" onclick="zoomImgBotao(1)">+</button></div>
+    <div class="visor-doc visor-img" id="visor-img"><img id="img-ampliada" alt="" draggable="false"></div>
+    <button class="btn claro" style="margin-top:12px" onclick="this.closest('.veu').remove()">Fechar</button></div>`;
+  document.body.appendChild(v);
+  const visor = v.querySelector('#visor-img'), img = v.querySelector('#img-ampliada');
+  img.onload = () => { _zoomImg = { z: 1, visor, img, base: visor.clientWidth }; aplicarZoomImg(1, 0, 0); };
+  img.src = src;
+  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  let pinca = null;
+  visor.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 2 || !_zoomImg) return;
+    const r = visor.getBoundingClientRect();
+    pinca = { d: dist(e.touches), z: _zoomImg.z, cx: (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left, cy: (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top };
+    e.preventDefault();
+  }, { passive: false });
+  visor.addEventListener('touchmove', (e) => { if (pinca && e.touches.length === 2) { e.preventDefault(); aplicarZoomImg(pinca.z * dist(e.touches) / pinca.d, pinca.cx, pinca.cy); } }, { passive: false });
+  visor.addEventListener('touchend', (e) => { if (e.touches.length < 2) pinca = null; });
+  visor.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+  visor.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+}
+function aplicarZoomImg(z, cx, cy) {
+  const d = _zoomImg; if (!d) return;
+  const visor = d.visor;
+  z = Math.min(5, Math.max(1, z));
+  const fx = (visor.scrollLeft + cx) / (visor.scrollWidth || 1), fy = (visor.scrollTop + cy) / (visor.scrollHeight || 1);
+  d.z = z; d.img.style.width = Math.round(d.base * z) + 'px';
+  visor.scrollLeft = fx * visor.scrollWidth - cx; visor.scrollTop = fy * visor.scrollHeight - cy;
+  document.getElementById('zoom-img-txt').textContent = Math.round(z * 100) + '%';
+}
+function zoomImgBotao(passo) { const v = _zoomImg && _zoomImg.visor; if (v) aplicarZoomImg(_zoomImg.z + passo * 0.5, v.clientWidth / 2, v.clientHeight / 2); }
 function zoomDocBotao(passo) { const v = _zoomDoc && _zoomDoc.visor; if (v) aplicarZoomDoc(_zoomDoc.z + passo * 0.5, v.clientWidth / 2, v.clientHeight / 2); }
 function dataUrlParaBlob(d) {
   const m = /^data:([^;,]*)(;base64)?,(.*)$/s.exec(d || ''); if (!m) return null;
@@ -1569,7 +1716,7 @@ async function abrirArquivo(pid, aid) {
     if (!conteudo) { avisar('O arquivo ainda não chegou ao Google Drive. Tente mais tarde.'); return; }
   }
   const nome = a.nome || a.nomeOriginal || 'Arquivo';
-  if (tipo === 'imagem') { ampliar(`<img src="${esc(conteudo)}" alt="" style="width:100%;height:auto;display:block;border-radius:8px">`, nome); return; }
+  if (tipo === 'imagem') { verImagem(conteudo, nome); return; }
   if (tipo === 'documento') {
     const rec = await recursosDocumentos();
     if (!rec) { avisar('A aparência dos documentos ainda não chegou do notebook. Abra o SGO_RA no notebook com internet e tente de novo.'); return; }
@@ -1625,9 +1772,26 @@ const pacientesParaEscolher = () => pacientes().filter((p) => situacao(p) !== 'e
 function blocoPaciente(pidFixo, avulso, nomeAvulso, pidAtual) {
   if (pidFixo && !avulso) return `<p class="pac-fixo">Paciente: ${esc(nomePaciente(pidFixo))}</p>`;
   return `<label class="marcar"><input type="checkbox" name="avulso" ${avulso ? 'checked' : ''} onchange="alternarAvulsoForm(this.form)">Paciente ainda não cadastrado no sistema</label>
-    <label class="campo campo-form" id="grp-pac-sel"${avulso ? ' style="display:none"' : ''}>Paciente<select name="pacienteId"><option value="">Selecione</option>
-      ${pacientesParaEscolher().map((p) => `<option value="${esc(p.id)}" ${p.id === pidAtual ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}</select></label>
+    <div class="campo campo-form" id="grp-pac-sel"${avulso ? ' style="display:none"' : ''}><label for="busca-paciente-form">Paciente</label>
+      <input type="search" id="busca-paciente-form" placeholder="Digite o nome do paciente..." autocomplete="off" value="${esc(pidAtual ? nomePaciente(pidAtual) : '')}" oninput="sugerirPacientes(this, true)">
+      <input type="hidden" name="pacienteId" value="${esc(pidAtual || '')}">
+      <div class="sugestoes" id="sugestoes-pac"></div></div>
     <label class="campo campo-form" id="grp-pac-avulso"${avulso ? '' : ' style="display:none"'}>Nome do paciente (ainda não cadastrado)<input type="text" name="pacienteNomeAvulso" value="${esc(nomeAvulso || '')}" placeholder="Nome completo" autocapitalize="words" autocomplete="off"></label>`;
+}
+// busca enquanto digita: nome, CPF ou celular; mostra até 8 e o toque escolhe
+const semAcentoTxt = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function sugerirPacientes(el, digitou) {
+  const f = el.form; if (digitou) f.pacienteId.value = '';
+  const t = semAcentoTxt(el.value.trim()), caixa = document.getElementById('sugestoes-pac');
+  if (!t) { caixa.innerHTML = ''; return; }
+  const achados = pacientesParaEscolher().filter((p) => [p.nome, p.cpf, p.celular].some((v) => semAcentoTxt(v).includes(t))).slice(0, 8);
+  caixa.innerHTML = achados.length ? achados.map((p) => `<button type="button" onclick="escolherPaciente('${esc(p.id)}')"><b>${esc(p.nome)}</b>${situacao(p) === 'alta' ? ' <span class="avulso">(com alta)</span>' : ''}<span>${esc([p.celular, p.nascimento ? idade(p.nascimento) : ''].filter(Boolean).join(' · '))}</span></button>`).join('')
+    : '<p class="vazio" style="padding:8px">Nenhum paciente com esse nome. Se for novo, marque "Paciente ainda não cadastrado no sistema".</p>';
+}
+function escolherPaciente(id) {
+  const el = document.getElementById('busca-paciente-form');
+  el.value = nomePaciente(id); el.form.pacienteId.value = id;
+  document.getElementById('sugestoes-pac').innerHTML = ''; formularioAlterado = true;
 }
 function alternarAvulsoForm(f) {
   const av = f.avulso.checked;
@@ -1636,7 +1800,13 @@ function alternarAvulsoForm(f) {
 }
 function lerPacienteForm(f, pidFixo) {
   const avulso = !!(f.avulso && f.avulso.checked);
-  const pacienteId = avulso ? null : (pidFixo || (f.pacienteId ? f.pacienteId.value : ''));
+  let pacienteId = avulso ? null : (pidFixo || (f.pacienteId ? f.pacienteId.value : ''));
+  // digitou o nome inteiro sem tocar na sugestão: vale, se houver um só paciente com esse nome
+  if (!avulso && !pacienteId && f.querySelector('#busca-paciente-form')) {
+    const t = semAcentoTxt(f.querySelector('#busca-paciente-form').value.trim());
+    const iguais = t ? pacientesParaEscolher().filter((p) => semAcentoTxt(p.nome) === t) : [];
+    if (iguais.length === 1) pacienteId = iguais[0].id;
+  }
   const nome = avulso ? f.pacienteNomeAvulso.value.trim() : '';
   if (avulso && !nome) { avisar('Digite o nome do paciente avulso antes de salvar.'); f.pacienteNomeAvulso.focus(); return null; }
   if (!avulso && !pacienteId) { avisar('Selecione um paciente antes de salvar.'); return null; }
@@ -1941,7 +2111,7 @@ TELAS.configuracoes = () => {
       <div class="cartao dados"><div class="l"><span>Última atualização</span><span>${esc(quandoCurto(estado.ultima))}</span></div></div>
       <button class="btn" onclick="atualizarComGoogle()">Atualizar agora</button>
       <p class="grupo">Sobre</p>
-      <div class="cartao dados"><div class="l"><span>Versão</span><span>celular 0.9</span></div></div>
+      <div class="cartao dados"><div class="l"><span>Versão</span><span>celular 0.9.1</span></div></div>
       <p style="font-size:12px;color:var(--texto-ter);margin:4px 2px">Usuários, backup, registro de atividades e licença ficam no notebook.</p>
       <button class="link" onclick="desligarCelular()">Tirar os dados deste celular</button>
     </div>`;
